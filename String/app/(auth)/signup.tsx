@@ -24,14 +24,12 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const colors = themeColors[isDark ? "dark" : "light"];
 
   async function onSubmit() {
     setError(null);
-    setInfo(null);
     const trimmed = email.trim();
     if (!trimmed || !password) {
       setError("Please enter your email and password.");
@@ -60,9 +58,10 @@ export default function SignUpScreen() {
       return;
     }
 
-    setInfo(
-      "Check your email to confirm your account, then sign in.",
-    );
+    router.replace({
+      pathname: "./verify-email",
+      params: { email: trimmed },
+    });
   }
 
   return (
@@ -145,15 +144,6 @@ export default function SignUpScreen() {
             {error}
           </Text>
         ) : null}
-        {info ? (
-          <Text
-            style={[styles.info, { color: colors.textMuted }]}
-            accessibilityRole="alert"
-          >
-            {info}
-          </Text>
-        ) : null}
-
         <Pressable
           style={({ pressed }) => [
             styles.button,
@@ -217,11 +207,6 @@ const styles = StyleSheet.create({
   error: {
     fontSize: 14,
     marginTop: 12,
-  },
-  info: {
-    fontSize: 14,
-    marginTop: 12,
-    lineHeight: 20,
   },
   button: {
     marginTop: 24,

@@ -15,7 +15,7 @@ import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginScreen() {
-  const { signIn } = useAuth();
+  const { signIn, resendSignupEmail } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -23,12 +23,15 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const colors = themeColors[isDark ? "dark" : "light"];
 
   async function onSubmit() {
     setError(null);
+    setInfo(null);
     const trimmed = email.trim();
     if (!trimmed || !password) {
       setError("Please enter your email and password.");
@@ -45,6 +48,30 @@ export default function LoginScreen() {
     }
 
     router.replace("/home");
+  }
+
+  const canResendConfirmation =
+    !!error && /email.*confirm/i.test(error) && email.trim().length > 0;
+
+  async function onResendConfirmation() {
+    setInfo(null);
+    setError(null);
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setError("Enter your email first so we can resend the confirmation.");
+      return;
+    }
+
+    setResending(true);
+    const { error: resendError } = await resendSignupEmail(trimmed);
+    setResending(false);
+
+    if (resendError) {
+      setError(resendError.message);
+      return;
+    }
+
+    setInfo("Confirmation email resent. Check your inbox.");
   }
 
   return (
@@ -103,6 +130,22 @@ export default function LoginScreen() {
           >
             {error}
           </Text>
+        ) : null}
+        {info ? (
+          <Text
+            style={[styles.info, { color: colors.textMuted }]}
+            accessibilityRole="alert"
+          >
+            {info}
+          </Text>
+        ) : null}
+
+        {canResendConfirmation ? (
+          <Pressable onPress={onResendConfirmation} disabled={resending}>
+            <Text style={[styles.link, { color: colors.link, marginTop: 12 }]}>
+              {resending ? "Resending confirmation..." : "Resend confirmation email"}
+            </Text>
+          </Pressable>
         ) : null}
 
         <Pressable
@@ -167,6 +210,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   error: {
+    fontSize: 14,
+    marginTop: 12,
+  },
+  info: {
     fontSize: 14,
     marginTop: 12,
   },

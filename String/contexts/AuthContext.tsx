@@ -22,6 +22,7 @@ type AuthContextValue = { // what this context exports and the information
   signUp: (email: string, password: string) => ReturnType<
     typeof supabase.auth.signUp
   >;
+  resendSignupEmail: (email: string) => ReturnType<typeof supabase.auth.resend>;
   signOut: () => ReturnType<typeof supabase.auth.signOut>;
 };
 
@@ -68,6 +69,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return supabase.auth.signUp({ email, password });
   }, []);
 
+  const resendSignupEmail = useCallback((email: string) => {
+    return supabase.auth.resend({
+      type: "signup",
+      email,
+    });
+  }, []);
+
   const signOut = useCallback(() => supabase.auth.signOut(), []);
 
   const value = useMemo<AuthContextValue>(
@@ -77,9 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       initialized,
       signIn,
       signUp,
+      resendSignupEmail,
       signOut,
     }),
-    [session, initialized, signIn, signUp, signOut],
+    [session, initialized, signIn, signUp, resendSignupEmail, signOut],
   );
 
   return (
