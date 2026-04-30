@@ -26,7 +26,7 @@ type AuthContextValue = { // what this context exports and the information
   signOut: () => ReturnType<typeof supabase.auth.signOut>;
 };
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined); // creates context object
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null); // going to hold what Supabase reports as the current session
