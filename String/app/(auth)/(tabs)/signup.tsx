@@ -59,7 +59,7 @@ export default function SignUpScreen() {
     }
 
     router.replace({
-      pathname: "./verify-email",
+      pathname: "/verify-email",
       params: { email: trimmed },
     });
   }
