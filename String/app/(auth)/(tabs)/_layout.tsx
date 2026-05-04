@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { useColorScheme } from "react-native";
 
+import { AuthTabIcon } from "@/components/auth/AuthTabIcon";
 import { themeColors } from "@/constants/theme";
 
 export default function AuthTabsLayout() {
@@ -21,8 +22,34 @@ export default function AuthTabsLayout() {
         tabBarLabelStyle: { fontWeight: "600", fontSize: 13 },
       }}
     >
-      <Tabs.Screen name="login" options={{ title: "Sign in" }} />
-      <Tabs.Screen name="signup" options={{ title: "Sign up" }} />
+      <Tabs.Screen
+        name="login"
+        options={{
+          title: "Sign in",
+          tabBarIcon: ({ color, size }) => (
+            <AuthTabIcon
+              sfSymbol="person.crop.circle.fill"
+              materialName="login"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="signup"
+        options={{
+          title: "Sign up",
+          tabBarIcon: ({ color, size }) => (
+            <AuthTabIcon
+              sfSymbol="person.crop.circle.badge.plus"
+              materialName="person-add"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
