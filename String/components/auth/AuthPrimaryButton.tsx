@@ -32,7 +32,7 @@ export function AuthPrimaryButton({
         styles.button,
         { backgroundColor: colors.primary },
         pressed && styles.buttonPressed,
-        loading && styles.buttonDisabled,
+        isDisabled && styles.buttonDisabled,
       ]}
       onPress={onPress}
       disabled={isDisabled}
