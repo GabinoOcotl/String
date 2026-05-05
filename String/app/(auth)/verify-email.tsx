@@ -1,7 +1,8 @@
 import { Link, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
 
+import { AuthPrimaryButton } from "@/components/auth/AuthPrimaryButton";
 import { AuthScreenChrome } from "@/components/auth/AuthScreenChrome";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,22 +63,11 @@ export default function VerifyEmailScreen() {
         </Text>
       ) : null}
 
-      <Pressable
-        style={({ pressed }) => [
-          styles.button,
-          { backgroundColor: colors.primary },
-          pressed && styles.buttonPressed,
-          loading && styles.buttonDisabled,
-        ]}
+      <AuthPrimaryButton
+        label="Resend confirmation"
+        loading={loading}
         onPress={onResend}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color={colors.onPrimary} />
-        ) : (
-          <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Resend confirmation</Text>
-        )}
-      </Pressable>
+      />
 
       <View style={styles.footer}>
         <Link href="/login" asChild>
@@ -103,23 +93,6 @@ const styles = StyleSheet.create({
   },
   email: {
     marginTop: 8,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  button: {
-    marginTop: 24,
-    height: 48,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonPressed: {
-    opacity: 0.9,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
     fontSize: 16,
     fontWeight: "600",
   },
