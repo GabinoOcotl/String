@@ -1,15 +1,9 @@
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  useColorScheme,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
 
+import { AuthFields } from "@/components/auth/AuthFields";
+import { AuthPrimaryButton } from "@/components/auth/AuthPrimaryButton";
 import { AuthScreenChrome } from "@/components/auth/AuthScreenChrome";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,14 +26,14 @@ export default function LoginScreen() {
   async function onSubmit() {
     setError(null);
     setInfo(null);
-    const trimmed = email.trim();
-    if (!trimmed || !password) {
+    const emailTrim = email.trim();
+    if (!emailTrim || !password) {
       setError("Please enter your email and password.");
       return;
     }
 
     setLoading(true);
-    const { error: err } = await signIn(trimmed, password);
+    const { error: err } = await signIn(emailTrim, password);
     setLoading(false);
 
     if (err) {
@@ -56,14 +50,14 @@ export default function LoginScreen() {
   async function onResendConfirmation() {
     setInfo(null);
     setError(null);
-    const trimmed = email.trim();
-    if (!trimmed) {
+    const emailTrim = email.trim();
+    if (!emailTrim) {
       setError("Enter your email first so we can resend the confirmation.");
       return;
     }
 
     setResending(true);
-    const { error: resendError } = await resendSignupEmail(trimmed);
+    const { error: resendError } = await resendSignupEmail(emailTrim);
     setResending(false);
 
     if (resendError) {
@@ -81,65 +75,15 @@ export default function LoginScreen() {
         Sign in to continue
       </Text>
 
-      <View style={styles.form}>
-        <Text style={[styles.label, { color: colors.textMuted }]}>Email</Text>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          placeholder="you@example.com"
-          placeholderTextColor={colors.textMuted}
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.fieldBg,
-              borderColor: colors.border,
-            },
-          ]}
-        />
-
-        <Text style={[styles.label, { color: colors.textMuted }]}>
-          Password
-        </Text>
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoComplete="password"
-          textContentType="password"
-          placeholder="••••••••"
-          placeholderTextColor={colors.textMuted}
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.fieldBg,
-              borderColor: colors.border,
-            },
-          ]}
-        />
-
-        {error ? (
-          <Text
-            style={[styles.error, { color: colors.error }]}
-            accessibilityRole="alert"
-          >
-            {error}
-          </Text>
-        ) : null}
-        {info ? (
-          <Text
-            style={[styles.info, { color: colors.textMuted }]}
-            accessibilityRole="alert"
-          >
-            {info}
-          </Text>
-        ) : null}
-
+      <AuthFields
+        variant="login"
+        email={email}
+        password={password}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        error={error}
+        info={info}
+      >
         {canResendConfirmation ? (
           <Pressable onPress={onResendConfirmation} disabled={resending}>
             <Text style={[styles.link, { color: colors.link, marginTop: 12 }]}>
@@ -147,26 +91,9 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
         ) : null}
+      </AuthFields>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.button,
-            { backgroundColor: colors.primary },
-            pressed && styles.buttonPressed,
-            loading && styles.buttonDisabled,
-          ]}
-          onPress={onSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.onPrimary} />
-          ) : (
-            <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
-              Sign in
-            </Text>
-          )}
-        </Pressable>
-      </View>
+      <AuthPrimaryButton label="Sign in" loading={loading} onPress={onSubmit} />
 
       <View style={styles.footer}>
         <Text style={[styles.footerText, { color: colors.textMuted }]}>
@@ -191,48 +118,6 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 8,
     fontSize: 16,
-  },
-  form: {
-    marginTop: 32,
-    gap: 0,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 6,
-    marginTop: 16,
-  },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-  },
-  error: {
-    fontSize: 14,
-    marginTop: 12,
-  },
-  info: {
-    fontSize: 14,
-    marginTop: 12,
-  },
-  button: {
-    marginTop: 24,
-    height: 48,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonPressed: {
-    opacity: 0.9,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: "600",
   },
   footer: {
     flexDirection: "row",

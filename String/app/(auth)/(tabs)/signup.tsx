@@ -1,15 +1,9 @@
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  useColorScheme,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
 
+import { AuthFields } from "@/components/auth/AuthFields";
+import { AuthPrimaryButton } from "@/components/auth/AuthPrimaryButton";
 import { AuthScreenChrome } from "@/components/auth/AuthScreenChrome";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,96 +67,22 @@ export default function SignUpScreen() {
         Sign up to get started
       </Text>
 
-      <View style={styles.form}>
-        <Text style={[styles.label, { color: colors.textMuted }]}>Email</Text>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          placeholder="you@example.com"
-          placeholderTextColor={colors.textMuted}
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.fieldBg,
-              borderColor: colors.border,
-            },
-          ]}
-        />
+      <AuthFields
+        variant="signup"
+        email={email}
+        password={password}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        confirmPassword={confirm}
+        onConfirmPasswordChange={setConfirm}
+        error={error}
+      />
 
-        <Text style={[styles.label, { color: colors.textMuted }]}>
-          Password
-        </Text>
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoComplete="new-password"
-          textContentType="newPassword"
-          placeholder="At least 6 characters"
-          placeholderTextColor={colors.textMuted}
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.fieldBg,
-              borderColor: colors.border,
-            },
-          ]}
-        />
-
-        <Text style={[styles.label, { color: colors.textMuted }]}>
-          Confirm password
-        </Text>
-        <TextInput
-          value={confirm}
-          onChangeText={setConfirm}
-          secureTextEntry
-          autoComplete="new-password"
-          textContentType="newPassword"
-          placeholder="Repeat password"
-          placeholderTextColor={colors.textMuted}
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.fieldBg,
-              borderColor: colors.border,
-            },
-          ]}
-        />
-
-        {error ? (
-          <Text
-            style={[styles.error, { color: colors.error }]}
-            accessibilityRole="alert"
-          >
-            {error}
-          </Text>
-        ) : null}
-        <Pressable
-          style={({ pressed }) => [
-            styles.button,
-            { backgroundColor: colors.primary },
-            pressed && styles.buttonPressed,
-            loading && styles.buttonDisabled,
-          ]}
-          onPress={onSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.onPrimary} />
-          ) : (
-            <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
-              Create account
-            </Text>
-          )}
-        </Pressable>
-      </View>
+      <AuthPrimaryButton
+        label="Create account"
+        loading={loading}
+        onPress={onSubmit}
+      />
 
       <View style={styles.footer}>
         <Text style={[styles.footerText, { color: colors.textMuted }]}>
@@ -187,43 +107,6 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 8,
     fontSize: 16,
-  },
-  form: {
-    marginTop: 32,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 6,
-    marginTop: 16,
-  },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-  },
-  error: {
-    fontSize: 14,
-    marginTop: 12,
-  },
-  button: {
-    marginTop: 24,
-    height: 48,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonPressed: {
-    opacity: 0.9,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: "600",
   },
   footer: {
     flexDirection: "row",
