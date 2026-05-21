@@ -37,13 +37,17 @@ export default function SignUpScreen() {
       setError("Passwords do not match.");
       return;
     }
+    if (!email.endsWith("@wisc.edu")) {
+      setError("Please use your UW-Madison email");
+      return;
+    }
 
     setLoading(true);
     const { data, error: err } = await signUp(trimmed, password);
     setLoading(false);
 
     if (err) {
-      setError(err.message);
+      setError(err.message + ". Note: this comes from supabase");
       return;
     }
 

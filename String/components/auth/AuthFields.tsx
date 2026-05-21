@@ -49,11 +49,10 @@ export function AuthFields(props: AuthFieldsProps) {
       <TextInput
         value={props.email}
         onChangeText={props.onEmailChange}
-        autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
         textContentType="emailAddress"
-        placeholder="you@example.com"
+        placeholder="NetID@wisc.edu"
         placeholderTextColor={colors.textMuted}
         style={[styles.input, inputColors]}
       />
