@@ -7,6 +7,7 @@ import { AuthPrimaryButton } from "@/components/auth/AuthPrimaryButton";
 import { AuthScreenChrome } from "@/components/auth/AuthScreenChrome";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { GENERIC_AUTH_ERROR, mapAuthError } from "@/lib/authErrors";
 
 export default function SignUpScreen() {
   const { signUp } = useAuth();
@@ -37,29 +38,33 @@ export default function SignUpScreen() {
       setError("Passwords do not match.");
       return;
     }
-    if (!email.endsWith("@wisc.edu")) {
+    if (!trimmed.endsWith("@wisc.edu")) {
       setError("Please use your UW-Madison email");
       return;
     }
 
     setLoading(true);
-    const { data, error: err } = await signUp(trimmed, password);
-    setLoading(false);
+    try {
+      const { data, error: err } = await signUp(trimmed, password);
+      if (err) {
+        setError(mapAuthError(err));
+        return;
+      }
 
-    if (err) {
-      setError(err.message + ". Note: this comes from supabase");
-      return;
+      if (data.session) {
+        router.replace("/home");
+        return;
+      }
+
+      router.replace({
+        pathname: "/verify-email",
+        params: { email: trimmed },
+      });
+    } catch {
+      setError(GENERIC_AUTH_ERROR);
+    } finally {
+      setLoading(false);
     }
-
-    if (data.session) {
-      router.replace("/home");
-      return;
-    }
-
-    router.replace({
-      pathname: "/verify-email",
-      params: { email: trimmed },
-    });
   }
 
   return (
@@ -94,7 +99,7 @@ export default function SignUpScreen() {
         </Text>
         <Link href="/login" asChild>
           <Pressable>
-            <Text style={[styles.link, { color: colors.link }]}>Sign in</Text>
+            <Text style={[styles.link, { color: colors.link }]}>Login</Text>
           </Pressable>
         </Link>
       </View>

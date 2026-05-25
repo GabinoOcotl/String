@@ -7,6 +7,7 @@ import { AuthPrimaryButton } from "@/components/auth/AuthPrimaryButton";
 import { AuthScreenChrome } from "@/components/auth/AuthScreenChrome";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { GENERIC_AUTH_ERROR, mapAuthError } from "@/lib/authErrors";
 
 export default function LoginScreen() {
   const { signIn, resendSignupEmail } = useAuth();
@@ -33,19 +34,22 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    const { error: err } = await signIn(emailTrim, password);
-    setLoading(false);
-
-    if (err) {
-      setError(err.message);
-      return;
+    try {
+      const { error: err } = await signIn(emailTrim, password);
+      if (err) {
+        setError(mapAuthError(err));
+        return;
+      }
+      router.replace("/home");
+    } catch {
+      setError(GENERIC_AUTH_ERROR);
+    } finally {
+      setLoading(false);
     }
-
-    router.replace("/home");
   }
 
   const canResendConfirmation =
-    !!error && /email.*confirm/i.test(error) && email.trim().length > 0;
+    !!error && /confirm/i.test(error) && email.trim().length > 0;
 
   async function onResendConfirmation() {
     setInfo(null);
@@ -57,15 +61,18 @@ export default function LoginScreen() {
     }
 
     setResending(true);
-    const { error: resendError } = await resendSignupEmail(emailTrim);
-    setResending(false);
-
-    if (resendError) {
-      setError(resendError.message);
-      return;
+    try {
+      const { error: resendError } = await resendSignupEmail(emailTrim);
+      if (resendError) {
+        setError(mapAuthError(resendError));
+        return;
+      }
+      setInfo("Confirmation email resent. Check your inbox.");
+    } catch {
+      setError(GENERIC_AUTH_ERROR);
+    } finally {
+      setResending(false);
     }
-
-    setInfo("Confirmation email resent. Check your inbox.");
   }
 
   return (

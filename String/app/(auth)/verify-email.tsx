@@ -1,11 +1,15 @@
 import { Link, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
 
 import { AuthPrimaryButton } from "@/components/auth/AuthPrimaryButton";
 import { AuthScreenChrome } from "@/components/auth/AuthScreenChrome";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { GENERIC_AUTH_ERROR, mapAuthError } from "@/lib/authErrors";
+
+const MISSING_EMAIL_ERROR =
+  "No email was provided. Go back to sign up and try again.";
 
 export default function VerifyEmailScreen() {
   const { resendSignupEmail } = useAuth();
@@ -20,25 +24,34 @@ export default function VerifyEmailScreen() {
 
   const emailValue = typeof email === "string" ? email : "";
 
+  useEffect(() => {
+    if (!emailValue) {
+      setError(MISSING_EMAIL_ERROR);
+    }
+  }, [emailValue]);
+
   async function onResend() {
     setMessage(null);
     setError(null);
 
     if (!emailValue) {
-      setError("No email was provided. Go back to sign up and try again.");
+      setError(MISSING_EMAIL_ERROR);
       return;
     }
 
     setLoading(true);
-    const { error: resendError } = await resendSignupEmail(emailValue);
-    setLoading(false);
-
-    if (resendError) {
-      setError(resendError.message);
-      return;
+    try {
+      const { error: resendError } = await resendSignupEmail(emailValue);
+      if (resendError) {
+        setError(mapAuthError(resendError));
+        return;
+      }
+      setMessage("Confirmation email sent. Check your inbox (and spam folder).");
+    } catch {
+      setError(GENERIC_AUTH_ERROR);
+    } finally {
+      setLoading(false);
     }
-
-    setMessage("Confirmation email sent. Check your inbox (and spam folder).");
   }
 
   return (
@@ -67,6 +80,7 @@ export default function VerifyEmailScreen() {
         label="Resend confirmation"
         loading={loading}
         onPress={onResend}
+        disabled={!emailValue}
       />
 
       <View style={styles.footer}>

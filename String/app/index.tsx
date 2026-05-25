@@ -1,17 +1,14 @@
 import { Redirect } from "expo-router";
 
+import { AuthInitGate } from "@/components/auth/AuthInitGate";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Index() {
-  const { session, initialized } = useAuth();
+  const { session } = useAuth();
 
-  if (!initialized) {
-    return null;
-  }
-
-  if (session) {
-    return <Redirect href="/home" />;
-  }
-
-  return <Redirect href="/login" />;
+  return (
+    <AuthInitGate>
+      {session ? <Redirect href="/home" /> : <Redirect href="/login" />}
+    </AuthInitGate>
+  );
 }

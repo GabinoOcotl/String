@@ -25,7 +25,7 @@ export default function AuthTabsLayout() {
       <Tabs.Screen
         name="login"
         options={{
-          title: "Sign in",
+          title: "Login",
           tabBarIcon: ({ color, size }) => (
             <AuthTabIcon
               sfSymbol="person.crop.circle.fill"

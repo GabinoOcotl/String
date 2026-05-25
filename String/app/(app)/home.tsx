@@ -1,8 +1,10 @@
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
 
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { GENERIC_AUTH_ERROR, mapAuthError } from "@/lib/authErrors";
 
 export const options = {
   title: "Home",
@@ -15,9 +17,24 @@ export default function HomeScreen() {
   const isDark = colorScheme === "dark";
   const colors = themeColors[isDark ? "dark" : "light"];
 
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   async function onSignOut() {
-    await signOut();
-    router.replace("/login");
+    setError(null);
+    setLoading(true);
+    try {
+      const { error: signOutError } = await signOut();
+      if (signOutError) {
+        setError(mapAuthError(signOutError));
+        return;
+      }
+      router.replace("/login");
+    } catch {
+      setError(GENERIC_AUTH_ERROR);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -27,16 +44,24 @@ export default function HomeScreen() {
         {user?.email ?? "Signed in"}
       </Text>
 
+      {error ? (
+        <Text style={[styles.error, { color: colors.error }]} accessibilityRole="alert">
+          {error}
+        </Text>
+      ) : null}
+
       <Pressable
         style={({ pressed }) => [
           styles.button,
           { borderColor: colors.border },
           pressed && styles.buttonPressed,
+          loading && styles.buttonDisabled,
         ]}
         onPress={onSignOut}
+        disabled={loading}
       >
         <Text style={[styles.buttonText, { color: colors.primary }]}>
-          Sign out
+          {loading ? "Signing out..." : "Sign out"}
         </Text>
       </Pressable>
     </View>
@@ -60,6 +85,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
+  error: {
+    marginTop: 16,
+    fontSize: 14,
+    textAlign: "center",
+  },
   button: {
     marginTop: 32,
     paddingVertical: 12,
@@ -69,6 +99,9 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.85,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: {
     fontSize: 16,
