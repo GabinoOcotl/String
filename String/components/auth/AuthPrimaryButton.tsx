@@ -11,7 +11,7 @@ import { themeColors } from "@/constants/theme";
 export type AuthPrimaryButtonProps = {
   label: string;
   loading: boolean;
-  onPress: () => void;
+  onPress: () => void | Promise<void>;
   disabled?: boolean;
 };
 
@@ -26,6 +26,17 @@ export function AuthPrimaryButton({
   const colors = themeColors[isDark ? "dark" : "light"];
   const isDisabled = disabled || loading;
 
+  function handlePress() {
+    try {
+      const result = onPress();
+      if (result instanceof Promise) {
+        void result.catch(() => {});
+      }
+    } catch {
+      // Screen handlers should catch and surface errors; this avoids unhandled rejections.
+    }
+  }
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -34,7 +45,7 @@ export function AuthPrimaryButton({
         pressed && styles.buttonPressed,
         isDisabled && styles.buttonDisabled,
       ]}
-      onPress={onPress}
+      onPress={handlePress}
       disabled={isDisabled}
     >
       {loading ? (

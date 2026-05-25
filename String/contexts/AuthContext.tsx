@@ -10,12 +10,15 @@ import {
   type ReactNode,
 } from "react";
 
-import { supabase } from "@/lib/supabase";
+import { INIT_SESSION_ERROR, mapAuthError } from "@/lib/authErrors";
+import { supabase, supabaseConfigError } from "@/lib/supabase";
 
-type AuthContextValue = { // what this context exports and the information
+type AuthContextValue = {
   session: Session | null;
   user: User | null;
   initialized: boolean;
+  initError: string | null;
+  retryBootstrap: () => void;
   signIn: (email: string, password: string) => ReturnType<
     typeof supabase.auth.signInWithPassword
   >;
@@ -26,40 +29,77 @@ type AuthContextValue = { // what this context exports and the information
   signOut: () => ReturnType<typeof supabase.auth.signOut>;
 };
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined); // creates context object
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null); // going to hold what Supabase reports as the current session
+  const [session, setSession] = useState<Session | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
+
+  const bootstrapSession = useCallback(async (cancelled: () => boolean) => {
+    if (supabaseConfigError) {
+      if (!cancelled()) {
+        setInitError(supabaseConfigError);
+        setSession(null);
+        setInitialized(true);
+      }
+      return;
+    }
+
+    try {
+      const { data: { session: next }, error } = await supabase.auth.getSession();
+      if (cancelled()) return;
+
+      if (error) {
+        setInitError(mapAuthError(error));
+        setSession(null);
+      } else {
+        setInitError(null);
+        setSession(next);
+      }
+    } catch {
+      if (!cancelled()) {
+        setInitError(INIT_SESSION_ERROR);
+        setSession(null);
+      }
+    } finally {
+      if (!cancelled()) {
+        setInitialized(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
+    setInitialized(false);
+    setInitError(null);
 
-    // runs on mount and gathers the stored session from supabase
-    supabase.auth.getSession().then(({ data: { session: next } }) => {
-      if (!cancelled) { // error catching --> if user cancels during getting the session
-        setSession(next);
-        setInitialized(true);
-      }
-    });
+    void bootstrapSession(() => cancelled);
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
+      if (!cancelled) {
+        setSession(next);
+      }
     });
 
     return () => {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [bootstrapAttempt, bootstrapSession]);
 
   useEffect(() => {
     if (initialized) {
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync().catch(() => {});
     }
   }, [initialized]);
+
+  const retryBootstrap = useCallback(() => {
+    setBootstrapAttempt((n) => n + 1);
+  }, []);
 
   const signIn = useCallback((email: string, password: string) => {
     return supabase.auth.signInWithPassword({ email, password });
@@ -83,12 +123,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user ?? null,
       initialized,
+      initError,
+      retryBootstrap,
       signIn,
       signUp,
       resendSignupEmail,
       signOut,
     }),
-    [session, initialized, signIn, signUp, resendSignupEmail, signOut],
+    [
+      session,
+      initialized,
+      initError,
+      retryBootstrap,
+      signIn,
+      signUp,
+      resendSignupEmail,
+      signOut,
+    ],
   );
 
   return (
