@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, useMemo, ReactNode } from "react";
 import {
   StyleSheet,
   Text,
@@ -31,15 +31,18 @@ export type AuthFieldsProps = AuthFieldsBase &
       }
   );
 
-export function AuthFields(props: AuthFieldsProps) {
+export const AuthFields = memo(function AuthFields(props: AuthFieldsProps) {
   const colorScheme = useColorScheme();
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
 
-  const inputColors = {
+  const inputColors = useMemo(
+    () => ({
     color: colors.text,
     backgroundColor: colors.fieldBg,
     borderColor: colors.border,
-  };
+  }),
+  [colors.text, colors.fieldBg, colors.border]
+  );
 
   const isSignup = props.variant === "signup";
 
@@ -106,7 +109,7 @@ export function AuthFields(props: AuthFieldsProps) {
       {props.children}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   form: {
