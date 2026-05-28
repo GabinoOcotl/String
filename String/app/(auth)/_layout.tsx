@@ -14,7 +14,7 @@ export default function AuthGroupLayout() {
   return (
     <AuthInitGate>
       {session ? (
-        <Redirect href="/home" />
+        <Redirect href="/schedule" />
       ) : (
         <Stack
           screenOptions={{

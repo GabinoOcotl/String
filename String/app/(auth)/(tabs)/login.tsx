@@ -40,7 +40,7 @@ export default function LoginScreen() {
         setError(mapAuthError(err));
         return;
       }
-      router.replace("/home");
+      router.replace("/schedule");
     } catch {
       setError(GENERIC_AUTH_ERROR);
     } finally {

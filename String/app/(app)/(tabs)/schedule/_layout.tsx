@@ -1,13 +1,15 @@
 import { DrawerToggleButton } from "@react-navigation/drawer";
 import { Drawer } from "expo-router/drawer";
-import { useColorScheme } from "react-native";
+import { useColorScheme, useWindowDimensions } from "react-native";
 
 import { themeColors } from "@/constants/theme";
 
 export default function ScheduleDrawerLayout() {
   const colorScheme = useColorScheme();
+  const { width } = useWindowDimensions();
   const isDark = colorScheme === "dark";
   const colors = themeColors[isDark ? "dark" : "light"];
+  const drawerWidth = Math.min(280, Math.max(220, width * 0.60));
 
   return (
     <Drawer
@@ -21,8 +23,8 @@ export default function ScheduleDrawerLayout() {
         headerTitleStyle: { fontWeight: "600", color: colors.text },
         drawerActiveTintColor: colors.primary,
         drawerInactiveTintColor: colors.textMuted,
-        drawerStyle: { backgroundColor: colors.surface },
-        drawerLabelStyle: { fontWeight: "600" },
+        drawerStyle: { backgroundColor: colors.surface, width: drawerWidth },
+        drawerLabelStyle: { fontWeight: "600", fontSize: 15 },
       }}
     >
       <Drawer.Screen

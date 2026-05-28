@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, useColorScheme } from "react-native";
+import { ScrollView, StyleSheet, Text, useColorScheme } from "react-native";
 
+import { ClassScheduleCard } from "@/components/schedule/ClassScheduleCard";
 import { themeColors } from "@/constants/theme";
 
 const PLACEHOLDER_CLASSES = [
@@ -35,22 +36,15 @@ export default function TodayScheduleScreen() {
       <Text style={[styles.date, { color: colors.textMuted }]}>Today&apos;s classes</Text>
 
       {PLACEHOLDER_CLASSES.map((item) => (
-        <Pressable
+        <ClassScheduleCard
           key={item.id}
-          style={({ pressed }) => [
-            styles.card,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-            pressed && styles.cardPressed,
-          ]}
+          name={item.name}
+          startTime={item.startTime}
+          duration={item.duration}
+          location={item.location}
+          professor={item.professor}
           onPress={() => router.push(`/schedule/(today)/${item.id}`)}
-        >
-          <Text style={[styles.className, { color: colors.text }]}>{item.name}</Text>
-          <Text style={[styles.meta, { color: colors.textMuted }]}>
-            {item.startTime} · {item.duration}
-          </Text>
-          <Text style={[styles.meta, { color: colors.textMuted }]}>{item.location}</Text>
-          <Text style={[styles.meta, { color: colors.textMuted }]}>{item.professor}</Text>
-        </Pressable>
+        />
       ))}
     </ScrollView>
   );
@@ -68,21 +62,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 4,
-  },
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 4,
-  },
-  cardPressed: {
-    opacity: 0.85,
-  },
-  className: {
-    fontSize: 17,
-    fontWeight: "600",
-  },
-  meta: {
-    fontSize: 14,
   },
 });

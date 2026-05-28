@@ -26,10 +26,10 @@ export default function AppTabsLayout() {
         name="schedule"
         options={{
           title: "Schedule",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size, focused }) => (
             <AuthTabIcon
-              sfSymbol="calendar"
-              materialName="calendar-today"
+              sfSymbol={focused ? "calendar.circle.fill" : "calendar.circle"}
+              materialName={focused ? "calendar-today" : "date-range"}
               color={color}
               size={size}
             />
@@ -40,10 +40,10 @@ export default function AppTabsLayout() {
         name="chats"
         options={{
           title: "Chats",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size, focused }) => (
             <AuthTabIcon
-              sfSymbol="message.fill"
-              materialName="chat"
+              sfSymbol={focused ? "message.fill" : "message"}
+              materialName={focused ? "chat" : "chat-bubble-outline"}
               color={color}
               size={size}
             />
