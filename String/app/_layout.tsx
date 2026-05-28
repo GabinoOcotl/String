@@ -1,3 +1,5 @@
+import "react-native-gesture-handler";
+
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 

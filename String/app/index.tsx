@@ -8,7 +8,7 @@ export default function Index() {
 
   return (
     <AuthInitGate>
-      {session ? <Redirect href="/home" /> : <Redirect href="/login" />}
+      {session ? <Redirect href="/schedule" /> : <Redirect href="/login" />}
     </AuthInitGate>
   );
 }

@@ -52,7 +52,7 @@ export default function SignUpScreen() {
       }
 
       if (data.session) {
-        router.replace("/home");
+        router.replace("/schedule");
         return;
       }
 

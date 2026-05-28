@@ -18,13 +18,7 @@ export default function AppGroupLayout() {
       ) : (
         <Stack
           screenOptions={{
-            headerShown: true,
-            headerShadowVisible: false,
-            headerStyle: {
-              backgroundColor: isDark ? colors.surface : colors.background,
-            },
-            headerTintColor: colors.text,
-            headerTitleStyle: { fontWeight: "600", color: colors.text },
+            headerShown: false,
             contentStyle: { backgroundColor: colors.background },
           }}
         />
