@@ -10,7 +10,8 @@ export type CourseSearchResultProps = {
 
 function formatCredits(hit: CourseSearchHit): string | null {
   if (hit.creditRange?.trim()) {
-    return hit.creditRange.trim();
+    const range = hit.creditRange.trim();
+    return /credits?/i.test(range) ? range : `${range} credits`;
   }
 
   const min = hit.minimumCredits;

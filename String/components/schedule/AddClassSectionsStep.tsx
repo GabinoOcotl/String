@@ -6,6 +6,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScheduleErrorBanner } from "@/components/schedule/ScheduleErrorBanner";
 import { ScheduleLoadingCenter } from "@/components/schedule/ScheduleLoadingCenter";
@@ -48,6 +49,7 @@ function SectionsEmptyState({
 export function AddClassSectionsStep({ course, onBack }: AddClassSectionsStepProps) {
   const colorScheme = useColorScheme();
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
+  const insets = useSafeAreaInsets();
 
   const { packages, loading, error, addingId, hasClass, selectSection } =
     useCourseSections(course);
@@ -80,7 +82,7 @@ export function AddClassSectionsStep({ course, onBack }: AddClassSectionsStepPro
         <FlatList
           data={packages}
           keyExtractor={(item) => item.id || String(item.enrollmentClassNumber)}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: 16 + insets.bottom }]}
           ListEmptyComponent={
             <SectionsEmptyState loading={loading} error={error} />
           }

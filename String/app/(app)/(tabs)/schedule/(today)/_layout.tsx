@@ -2,6 +2,7 @@ import { DrawerToggleButton } from "@react-navigation/drawer";
 import { Stack } from "expo-router";
 import { useColorScheme } from "react-native";
 
+import { AddClassHeaderButton } from "@/components/schedule/AddClassHeaderButton";
 import { themeColors } from "@/constants/theme";
 
 export default function TodayStackLayout() {
@@ -26,6 +27,7 @@ export default function TodayStackLayout() {
         options={{
           title: "Today",
           headerLeft: () => <DrawerToggleButton />,
+          headerRight: (props) => <AddClassHeaderButton {...props} />,
         }}
       />
       <Stack.Screen
