@@ -7,6 +7,7 @@ import type { CourseSearchHit } from "@/lib/api/types/enrollment";
 import { workerConfigError } from "@/lib/api/workerClient";
 
 const PAGE_SIZE = 20;
+const EMPTY_RESULTS: CourseSearchHit[] = [];
 
 /** Snapshot passed to the orchestrator so search state survives step changes. */
 export type CourseSearchSnapshot = {
@@ -25,7 +26,7 @@ export type UseCourseSearchOptions = {
  */
 export function useCourseSearch({
   initialQuery = "",
-  initialResults = [],
+  initialResults = EMPTY_RESULTS,
 }: UseCourseSearchOptions = {}) {
   const { session } = useAuth();
   const accessToken = session?.access_token;
@@ -38,9 +39,9 @@ export function useCourseSearch({
 
   useEffect(() => {
     if (!query) {
-      setResults([]);
-      setError(null);
-      setLoading(false);
+      setResults((prev) => (prev.length === 0 ? prev : EMPTY_RESULTS));
+      setError((prev) => (prev === null ? prev : null));
+      setLoading((prev) => (prev === false ? prev : false));
       return;
     }
 

@@ -58,24 +58,10 @@ function formatMeetingSummary(pkg: EnrollmentPackage): string {
   return parts.length > 0 ? parts.join(" · ") : "Time and location TBD";
 }
 
-function formatStatus(pkg: EnrollmentPackage): string {
-  const { status, availableSeats, waitlistTotal } = pkg.packageEnrollmentStatus;
-  const parts = [status];
-
-  if (availableSeats > 0) {
-    parts.push(`${availableSeats} open`);
-  } else if (waitlistTotal > 0) {
-    parts.push(`waitlist ${waitlistTotal}`);
-  }
-
-  return parts.join(" · ");
-}
-
 export function SectionPickerRow({ pkg, disabled, onPress }: SectionPickerRowProps) {
   const colorScheme = useColorScheme();
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
   const meetingSummary = formatMeetingSummary(pkg);
-  const status = formatStatus(pkg);
 
   return (
     <Pressable
@@ -91,7 +77,6 @@ export function SectionPickerRow({ pkg, disabled, onPress }: SectionPickerRowPro
       <Text style={[styles.sectionNumber, { color: colors.text }]}>
         Section {pkg.enrollmentClassNumber}
       </Text>
-      <Text style={[styles.status, { color: colors.textMuted }]}>{status}</Text>
       <Text style={[styles.meeting, { color: colors.textMuted }]} numberOfLines={2}>
         {meetingSummary}
       </Text>
@@ -118,9 +103,6 @@ const styles = StyleSheet.create({
   sectionNumber: {
     fontSize: 17,
     fontWeight: "600",
-  },
-  status: {
-    fontSize: 14,
   },
   meeting: {
     fontSize: 14,
