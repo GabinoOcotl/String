@@ -4,6 +4,7 @@ import { useColorScheme } from "react-native";
 import { AuthInitGate } from "@/components/auth/AuthInitGate";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { ScheduleProvider } from "@/contexts/ScheduleContext";
 
 export default function AppGroupLayout() {
   const { session } = useAuth();
@@ -16,12 +17,14 @@ export default function AppGroupLayout() {
       {!session ? (
         <Redirect href="/login" />
       ) : (
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
+        <ScheduleProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
+        </ScheduleProvider>
       )}
     </AuthInitGate>
   );
