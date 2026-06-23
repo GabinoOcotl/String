@@ -114,6 +114,13 @@ function scheduleClassName(hit: CourseSearchHit): string {
   return hit.courseDesignation?.trim() || hit.title?.trim() || "Untitled course";
 }
 
+export function scheduleClassId(
+  hit: CourseSearchHit,
+  pkg: EnrollmentPackage,
+): string {
+  return `${hit.subject.subjectCode}-${hit.courseId}-${pkg.enrollmentClassNumber}`;
+}
+
 export function scheduleClassFromPackage(
   hit: CourseSearchHit,
   pkg: EnrollmentPackage,
@@ -122,7 +129,7 @@ export function scheduleClassFromPackage(
   const subjectCode = hit.subject.subjectCode;
 
   return {
-    id: `${subjectCode}-${hit.courseId}-${pkg.enrollmentClassNumber}`,
+    id: scheduleClassId(hit, pkg),
     courseId: hit.courseId,
     subjectCode,
     name: scheduleClassName(hit),

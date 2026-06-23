@@ -34,6 +34,13 @@ export default function TodayStackLayout() {
           title: "Class",
         }}
       />
+      <Stack.Screen
+        name="add-class"
+        options={{
+          title: "Add class",
+          presentation: "modal",
+        }}
+      />
     </Stack>
   );
 }
