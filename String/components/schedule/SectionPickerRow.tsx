@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, useColorScheme } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
 
 import { themeColors } from "@/constants/theme";
 import type { ClassMeeting, EnrollmentPackage } from "@/lib/api/types/enrollment";
@@ -7,9 +8,12 @@ import {
   formatMeetingTime,
 } from "@/lib/schedule/mapSections";
 
+export type SectionRowState = "available" | "added" | "blocked";
+
 export type SectionPickerRowProps = {
   pkg: EnrollmentPackage;
-  disabled?: boolean;
+  state: SectionRowState;
+  blockedMessage?: string;
   onPress: () => void;
 };
 
@@ -58,31 +62,69 @@ function formatMeetingSummary(pkg: EnrollmentPackage): string {
   return parts.length > 0 ? parts.join(" · ") : "Time and location TBD";
 }
 
-export function SectionPickerRow({ pkg, disabled, onPress }: SectionPickerRowProps) {
+export function SectionPickerRow({
+  pkg,
+  state,
+  blockedMessage,
+  onPress,
+}: SectionPickerRowProps) {
   const colorScheme = useColorScheme();
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
   const meetingSummary = formatMeetingSummary(pkg);
+  const disabled = state !== "available";
 
   return (
-    <Pressable
-      disabled={disabled}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-        disabled && styles.cardDisabled,
-        pressed && !disabled && styles.cardPressed,
-      ]}
-      onPress={onPress}
-    >
-      <Text style={[styles.sectionNumber, { color: colors.text }]}>
-        Section {pkg.enrollmentClassNumber}
-      </Text>
-      <Text style={[styles.meeting, { color: colors.textMuted }]} numberOfLines={2}>
-        {meetingSummary}
-      </Text>
-      {disabled ? (
-        <Text style={[styles.added, { color: colors.textMuted }]}>Already in schedule</Text>
-      ) : null}
+    <Pressable disabled={disabled} onPress={onPress}>
+      {({ pressed }) => (
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            state === "blocked" && styles.cardBlocked,
+            state === "added" && styles.cardAdded,
+            pressed && state === "available" && styles.cardPressed,
+          ]}
+        >
+          <View style={styles.row}>
+            <View style={styles.content}>
+              <Text style={[styles.sectionNumber, { color: colors.text }]}>
+                Section {pkg.enrollmentClassNumber}
+              </Text>
+              <Text style={[styles.meeting, { color: colors.textMuted }]} numberOfLines={2}>
+                {meetingSummary}
+              </Text>
+              {state === "added" ? (
+                <View style={styles.statusRow}>
+                  <Ionicons name="checkmark-circle" size={15} color={colors.textMuted} />
+                  <Text style={[styles.statusText, { color: colors.textMuted }]}>
+                    In your schedule
+                  </Text>
+                </View>
+              ) : null}
+              {state === "blocked" && blockedMessage ? (
+                <Text style={[styles.statusText, { color: colors.textMuted }]}>
+                  {blockedMessage}
+                </Text>
+              ) : null}
+            </View>
+            {state === "available" ? (
+              <View
+                style={[
+                  styles.addIconWrap,
+                  { borderColor: colors.primary },
+                  pressed && { backgroundColor: colors.primary },
+                ]}
+              >
+                <Ionicons
+                  name="add"
+                  size={22}
+                  color={pressed ? colors.onPrimary : colors.primary}
+                />
+              </View>
+            ) : null}
+          </View>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -92,13 +134,45 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  content: {
+    flex: 1,
     gap: 4,
+  },
+  addIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   cardPressed: {
     opacity: 0.85,
   },
-  cardDisabled: {
+  cardBlocked: {
     opacity: 0.55,
+  },
+  cardAdded: {
+    opacity: 0.7,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
+  statusText: {
+    fontSize: 13,
+    marginTop: 2,
+    fontStyle: "italic",
+    flexShrink: 1,
   },
   sectionNumber: {
     fontSize: 17,
@@ -106,10 +180,5 @@ const styles = StyleSheet.create({
   },
   meeting: {
     fontSize: 14,
-  },
-  added: {
-    fontSize: 13,
-    marginTop: 2,
-    fontStyle: "italic",
   },
 });

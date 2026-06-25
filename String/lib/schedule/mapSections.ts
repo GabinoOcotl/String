@@ -2,6 +2,7 @@ import type {
   ClassMeeting,
   CourseSearchHit,
   EnrollmentPackage,
+  EnrollmentSection,
 } from "@/lib/api/types/enrollment";
 import type { ScheduleClass } from "@/lib/schedule/types";
 
@@ -70,8 +71,29 @@ function parseInstructorName(value: unknown): string | null {
   }
 
   const record = value as Record<string, unknown>;
+  const nameField = record.name;
+
+  if (nameField && typeof nameField === "object") {
+    const name = nameField as Record<string, unknown>;
+    const parts = [
+      name.legalFirst ?? name.first,
+      name.legalMiddle ?? name.middle,
+      name.last,
+    ].filter(
+      (part): part is string => typeof part === "string" && part.trim().length > 0,
+    );
+
+    if (parts.length > 0) {
+      return parts.join(" ").trim();
+    }
+  }
+
+  if (typeof nameField === "string" && nameField.trim()) {
+    return nameField.trim();
+  }
+
   const directName =
-    record.name ?? record.displayName ?? record.instructorName ?? record.fullName;
+    record.displayName ?? record.instructorName ?? record.fullName;
 
   if (typeof directName === "string" && directName.trim()) {
     return directName.trim();
@@ -90,13 +112,35 @@ function parseInstructorName(value: unknown): string | null {
   return null;
 }
 
+function collectSectionInstructors(section: EnrollmentSection): unknown[] {
+  const instructors: unknown[] = [];
+
+  if (Array.isArray(section.instructors)) {
+    instructors.push(...section.instructors);
+  }
+
+  const singular = section.instructor;
+  if (singular && typeof singular === "object") {
+    instructors.push(singular);
+  }
+
+  return instructors;
+}
+
 function formatProfessor(pkg: EnrollmentPackage): string {
   const instructors: unknown[] = [];
 
   for (const section of pkg.sections ?? []) {
-    if (Array.isArray(section.instructors)) {
-      instructors.push(...section.instructors);
-    }
+    instructors.push(...collectSectionInstructors(section));
+  }
+
+  if (Array.isArray(pkg.instructors)) {
+    instructors.push(...(pkg.instructors as unknown[]));
+  }
+
+  const packageInstructor = pkg.instructor;
+  if (packageInstructor && typeof packageInstructor === "object") {
+    instructors.push(packageInstructor);
   }
 
   const names = instructors
@@ -114,11 +158,20 @@ function scheduleClassName(hit: CourseSearchHit): string {
   return hit.courseDesignation?.trim() || hit.title?.trim() || "Untitled course";
 }
 
+export function scheduleCourseKey(subjectCode: string, courseId: string): string {
+  return `${subjectCode}-${courseId}`;
+}
+
 export function scheduleClassId(
   hit: CourseSearchHit,
   pkg: EnrollmentPackage,
 ): string {
-  return `${hit.subject.subjectCode}-${hit.courseId}-${pkg.enrollmentClassNumber}`;
+  return `${scheduleCourseKey(hit.subject.subjectCode, hit.courseId)}-${pkg.enrollmentClassNumber}`;
+}
+
+export function enrollmentClassNumberFromScheduleClass(klass: ScheduleClass): string {
+  const prefix = `${scheduleCourseKey(klass.subjectCode, klass.courseId)}-`;
+  return klass.id.startsWith(prefix) ? klass.id.slice(prefix.length) : klass.id;
 }
 
 export function scheduleClassFromPackage(
