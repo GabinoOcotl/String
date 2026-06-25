@@ -10,10 +10,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScheduleErrorBanner } from "@/components/schedule/ScheduleErrorBanner";
 import { ScheduleLoadingCenter } from "@/components/schedule/ScheduleLoadingCenter";
-import { SectionPickerRow } from "@/components/schedule/SectionPickerRow";
+import { SectionPickerRow, type SectionRowState } from "@/components/schedule/SectionPickerRow";
 import { themeColors } from "@/constants/theme";
 import type { CourseSearchHit } from "@/lib/api/types/enrollment";
-import { scheduleClassId } from "@/lib/schedule/mapSections";
+import {
+  enrollmentClassNumberFromScheduleClass,
+  scheduleClassId,
+} from "@/lib/schedule/mapSections";
 import { useCourseSections } from "@/lib/schedule/useCourseSections";
 
 export type AddClassSectionsStepProps = {
@@ -51,8 +54,24 @@ export function AddClassSectionsStep({ course, onBack }: AddClassSectionsStepPro
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
   const insets = useSafeAreaInsets();
 
-  const { packages, loading, error, addingId, hasClass, selectSection } =
-    useCourseSections(course);
+  const {
+    packages,
+    loading,
+    error,
+    addingId,
+    hasClass,
+    hasCourse,
+    getClassForCourse,
+    selectSection,
+  } = useCourseSections(course);
+
+  const scheduledForCourse = getClassForCourse(
+    course.subject.subjectCode,
+    course.courseId,
+  );
+  const blockedSectionNumber = scheduledForCourse
+    ? enrollmentClassNumberFromScheduleClass(scheduledForCourse)
+    : null;
 
   const courseTitle =
     course.courseDesignation?.trim() ||
@@ -72,6 +91,9 @@ export function AddClassSectionsStep({ course, onBack }: AddClassSectionsStepPro
         <Text style={[styles.courseTitle, { color: colors.text }]} numberOfLines={2}>
           {courseTitle}
         </Text>
+        <Text style={[styles.helperText, { color: colors.textMuted }]}>
+          Tap a section to add it to your schedule.
+        </Text>
       </View>
 
       {error ? <ScheduleErrorBanner message={error} /> : null}
@@ -88,13 +110,29 @@ export function AddClassSectionsStep({ course, onBack }: AddClassSectionsStepPro
           }
           renderItem={({ item }) => {
             const id = scheduleClassId(course, item);
-            const alreadyAdded = hasClass(id);
             const isAdding = addingId === id;
+            const alreadyAdded = hasClass(id);
+
+            let state: SectionRowState = "available";
+            if (alreadyAdded) {
+              state = "added";
+            } else if (
+              hasCourse(course.subject.subjectCode, course.courseId) &&
+              !isAdding
+            ) {
+              state = "blocked";
+            }
+
+            const blockedMessage =
+              state === "blocked" && blockedSectionNumber
+                ? `Remove Section ${blockedSectionNumber} from schedule to choose another`
+                : undefined;
 
             return (
               <SectionPickerRow
                 pkg={item}
-                disabled={alreadyAdded || isAdding}
+                state={state}
+                blockedMessage={blockedMessage}
                 onPress={() => void selectSection(item)}
               />
             );
@@ -129,6 +167,9 @@ const styles = StyleSheet.create({
   courseTitle: {
     fontSize: 18,
     fontWeight: "600",
+  },
+  helperText: {
+    fontSize: 14,
   },
   list: {
     padding: 16,

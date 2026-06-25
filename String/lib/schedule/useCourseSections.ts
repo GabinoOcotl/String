@@ -16,7 +16,7 @@ import { scheduleClassFromPackage, scheduleClassId } from "@/lib/schedule/mapSec
 export function useCourseSections(course: CourseSearchHit) {
   const router = useRouter();
   const { session } = useAuth();
-  const { addClass, hasClass } = useSchedule();
+  const { addClass, hasClass, hasCourse, getClassForCourse } = useSchedule();
   const accessToken = session?.access_token;
 
   const [packages, setPackages] = useState<EnrollmentPackage[]>([]);
@@ -81,6 +81,14 @@ export function useCourseSections(course: CourseSearchHit) {
         return;
       }
 
+      const scheduled = getClassForCourse(
+        course.subject.subjectCode,
+        course.courseId,
+      );
+      if (scheduled && scheduled.id !== id) {
+        return;
+      }
+
       setAddingId(id);
 
       try {
@@ -93,7 +101,7 @@ export function useCourseSections(course: CourseSearchHit) {
         setAddingId(null);
       }
     },
-    [course, hasClass, addClass, router],
+    [course, hasClass, getClassForCourse, addClass, router],
   );
 
   return {
@@ -102,6 +110,8 @@ export function useCourseSections(course: CourseSearchHit) {
     error,
     addingId,
     hasClass,
+    hasCourse,
+    getClassForCourse,
     selectSection,
   };
 }

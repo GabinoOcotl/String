@@ -61,6 +61,7 @@ export interface EnrollmentSection {
     openWaitlistSpots?: number;
   };
   instructors?: unknown[];
+  instructor?: unknown;
   classMeetings?: ClassMeeting[];
   [key: string]: unknown;
 }

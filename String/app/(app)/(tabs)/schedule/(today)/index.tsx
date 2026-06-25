@@ -1,52 +1,93 @@
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, useColorScheme } from "react-native";
+import { useCallback, useState } from "react";
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
 
-import { ClassScheduleCard } from "@/components/schedule/ClassScheduleCard";
+import { ScheduleErrorBanner } from "@/components/schedule/ScheduleErrorBanner";
+import { ScheduleLoadingCenter } from "@/components/schedule/ScheduleLoadingCenter";
+import { SwipeableScheduleCard } from "@/components/schedule/SwipeableScheduleCard";
 import { themeColors } from "@/constants/theme";
-
-const PLACEHOLDER_CLASSES = [
-  {
-    id: "calc-101",
-    name: "Calculus I",
-    startTime: "9:00 AM",
-    location: "Science Hall 204",
-    duration: "50 min",
-    professor: "Dr. Chen",
-  },
-  {
-    id: "cs-220",
-    name: "Data Structures",
-    startTime: "11:30 AM",
-    location: "Engineering 110",
-    duration: "75 min",
-    professor: "Prof. Rivera",
-  },
-] as const;
+import { useSchedule } from "@/contexts/ScheduleContext";
+import type { ScheduleClass } from "@/lib/schedule/types";
 
 export default function TodayScheduleScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
+  const { classes, loading, error, reload, removeClass } = useSchedule();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await reload();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [reload]);
+
+  const handleRemove = useCallback(
+    (id: string) => {
+      void removeClass(id);
+    },
+    [removeClass],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: ScheduleClass }) => (
+      <SwipeableScheduleCard
+        name={item.name}
+        startTime={item.startTime}
+        duration={item.duration}
+        location={item.location}
+        professor={item.professor}
+        onPress={() => router.push(`/schedule/(today)/${item.id}`)}
+        onRemove={() => handleRemove(item.id)}
+      />
+    ),
+    [handleRemove, router],
+  );
+
+  const listHeader = (
+    <>
+      <Text style={[styles.date, { color: colors.textMuted }]}>Today&apos;s classes</Text>
+      {error ? <ScheduleErrorBanner message={error} /> : null}
+    </>
+  );
+
+  if (loading && classes.length === 0 && !refreshing) {
+    return <ScheduleLoadingCenter />;
+  }
 
   return (
-    <ScrollView
+    <FlatList
+      data={classes}
+      keyExtractor={(item) => item.id}
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
-    >
-      <Text style={[styles.date, { color: colors.textMuted }]}>Today&apos;s classes</Text>
-
-      {PLACEHOLDER_CLASSES.map((item) => (
-        <ClassScheduleCard
-          key={item.id}
-          name={item.name}
-          startTime={item.startTime}
-          duration={item.duration}
-          location={item.location}
-          professor={item.professor}
-          onPress={() => router.push(`/schedule/(today)/${item.id}`)}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
         />
-      ))}
-    </ScrollView>
+      }
+      ListHeaderComponent={listHeader}
+      ListEmptyComponent={
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+          No classes yet — tap + to add
+        </Text>
+      }
+      renderItem={renderItem}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+    />
   );
 }
 
@@ -56,11 +97,18 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    gap: 12,
+    flexGrow: 1,
   },
   date: {
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 4,
+  },
+  emptyText: {
+    fontSize: 15,
+    marginTop: 8,
+  },
+  separator: {
+    height: 12,
   },
 });

@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { scheduleCourseKey } from "@/lib/schedule/mapSections";
 import { loadSchedule, saveSchedule } from "@/lib/schedule/storage";
 import type { ScheduleClass } from "@/lib/schedule/types";
 
@@ -20,6 +21,11 @@ type ScheduleContextValue = {
   removeClass: (id: string) => Promise<void>;
   reload: () => Promise<void>;
   hasClass: (id: string) => boolean;
+  hasCourse: (subjectCode: string, courseId: string) => boolean;
+  getClassForCourse: (
+    subjectCode: string,
+    courseId: string,
+  ) => ScheduleClass | undefined;
 };
 
 const ScheduleContext = createContext<ScheduleContextValue | undefined>(undefined);
@@ -68,11 +74,32 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     [user?.id],
   );
 
+  const getClassForCourse = useCallback(
+    (subjectCode: string, courseId: string) => {
+      const courseKey = scheduleCourseKey(subjectCode, courseId);
+      return classes.find(
+        (item) => scheduleCourseKey(item.subjectCode, item.courseId) === courseKey,
+      );
+    },
+    [classes],
+  );
+
+  const hasCourse = useCallback(
+    (subjectCode: string, courseId: string) =>
+      getClassForCourse(subjectCode, courseId) != null,
+    [getClassForCourse],
+  );
+
   const addClass = useCallback(
     async (entry: ScheduleClass) => {
       setError(null);
 
       try {
+        const existingForCourse = getClassForCourse(entry.subjectCode, entry.courseId);
+        if (existingForCourse && existingForCourse.id !== entry.id) {
+          throw new Error("Another section of this course is already on your schedule.");
+        }
+
         const next = [...classes];
         const existingIndex = next.findIndex((item) => item.id === entry.id);
 
@@ -83,12 +110,16 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         }
 
         await persist(next);
-      } catch {
-        setError("Could not save class to your schedule.");
-        throw new Error("Could not save class to your schedule.");
+      } catch (err) {
+        const message =
+          err instanceof Error && err.message.includes("already on your schedule")
+            ? err.message
+            : "Could not save class to your schedule.";
+        setError(message);
+        throw new Error(message);
       }
     },
-    [classes, persist],
+    [classes, getClassForCourse, persist],
   );
 
   const removeClass = useCallback(
@@ -120,8 +151,20 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       removeClass,
       reload,
       hasClass,
+      hasCourse,
+      getClassForCourse,
     }),
-    [classes, loading, error, addClass, removeClass, reload, hasClass],
+    [
+      classes,
+      loading,
+      error,
+      addClass,
+      removeClass,
+      reload,
+      hasClass,
+      hasCourse,
+      getClassForCourse,
+    ],
   );
 
   return (
