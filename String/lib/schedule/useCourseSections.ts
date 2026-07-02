@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSchedule } from "@/contexts/ScheduleContext";
 import { getCourseSections } from "@/lib/api/classes";
 import { mapWorkerError } from "@/lib/api/mapWorkerError";
+import { joinSectionRoom } from "@/lib/api/rooms";
 import type { CourseSearchHit, EnrollmentPackage } from "@/lib/api/types/enrollment";
 import { workerConfigError } from "@/lib/api/workerClient";
 import { scheduleClassFromPackage, scheduleClassId } from "@/lib/schedule/mapSections";
@@ -91,8 +92,22 @@ export function useCourseSections(course: CourseSearchHit) {
 
       setAddingId(id);
 
+      if (!accessToken) {
+        setError("Sign in to add classes.");
+        return;
+      }
+
       try {
         const entry = scheduleClassFromPackage(course, pkg);
+        await joinSectionRoom(
+          {
+            subjectCode: course.subject.subjectCode,
+            courseId: course.courseId,
+            enrollmentClassNumber: pkg.enrollmentClassNumber,
+            courseDesignation: entry.name,
+          },
+          accessToken,
+        );
         await addClass(entry);
         router.back();
       } catch (err) {
@@ -101,7 +116,7 @@ export function useCourseSections(course: CourseSearchHit) {
         setAddingId(null);
       }
     },
-    [course, hasClass, getClassForCourse, addClass, router],
+    [course, hasClass, getClassForCourse, addClass, router, accessToken],
   );
 
   return {

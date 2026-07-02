@@ -9,7 +9,12 @@ import {
 } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { scheduleCourseKey } from "@/lib/schedule/mapSections";
+import { joinSectionRoom } from "@/lib/api/rooms";
+import { workerConfigError } from "@/lib/api/workerClient";
+import {
+  enrollmentClassNumberFromScheduleClass,
+  scheduleCourseKey,
+} from "@/lib/schedule/mapSections";
 import { loadSchedule, saveSchedule } from "@/lib/schedule/storage";
 import type { ScheduleClass } from "@/lib/schedule/types";
 
@@ -30,8 +35,30 @@ type ScheduleContextValue = {
 
 const ScheduleContext = createContext<ScheduleContextValue | undefined>(undefined);
 
+async function healSectionRoomJoins(
+  classes: ScheduleClass[],
+  accessToken: string,
+): Promise<void> {
+  await Promise.allSettled(
+    classes.map((klass) =>
+      joinSectionRoom(
+        {
+          subjectCode: klass.subjectCode,
+          courseId: klass.courseId,
+          enrollmentClassNumber: Number(
+            enrollmentClassNumberFromScheduleClass(klass),
+          ),
+          courseDesignation: klass.name,
+        },
+        accessToken,
+      ),
+    ),
+  );
+}
+
 export function ScheduleProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const accessToken = session?.access_token;
   const [classes, setClasses] = useState<ScheduleClass[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,13 +77,17 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     try {
       const next = await loadSchedule(user.id);
       setClasses(next);
+
+      if (accessToken && !workerConfigError && next.length > 0) {
+        await healSectionRoomJoins(next, accessToken);
+      }
     } catch {
       setError("Could not load your schedule.");
       setClasses([]);
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, accessToken]);
 
   useEffect(() => {
     void reload();
