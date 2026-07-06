@@ -1,16 +1,25 @@
-export const PLACEHOLDER_THREADS = [
-  { id: "calc-101", className: "Calculus I", lastMessage: "See you at review session" },
-  { id: "cs-220", className: "Data Structures", lastMessage: "Project groups posted" },
-] as const;
+import { getMyRooms, type RoomThread } from "@/lib/api/rooms";
 
-export type ChatThread = (typeof PLACEHOLDER_THREADS)[number];
+export type ChatThread = {
+  id: string;
+  className: string;
+  lastMessage: string;
+};
 
-export async function fetchChatThreads(): Promise<ChatThread[]> {
-  await new Promise((resolve) => setTimeout(resolve, 600));
-  return [...PLACEHOLDER_THREADS];
+function mapRoomToThread(room: RoomThread): ChatThread {
+  return {
+    id: room.id,
+    className: room.name,
+    lastMessage: room.lastMessage ?? "No messages yet",
+  };
 }
 
-export function getThreadTitle(threadId: string | undefined): string {
-  const thread = PLACEHOLDER_THREADS.find((t) => t.id === threadId);
-  return thread?.className ?? "Chat";
+export async function fetchChatThreads(accessToken: string): Promise<ChatThread[]> {
+  const rooms = await getMyRooms(accessToken);
+  return rooms.map(mapRoomToThread);
+}
+
+export function getThreadTitle(_threadId: string | undefined, name?: string): string {
+  const trimmed = name?.trim();
+  return trimmed || "Chat";
 }

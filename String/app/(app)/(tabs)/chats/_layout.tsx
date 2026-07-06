@@ -26,8 +26,8 @@ export default function ChatsStackLayout() {
       <Stack.Screen
         name="[threadId]"
         options={({ route }) => {
-          const threadId = (route.params as { threadId?: string } | undefined)?.threadId;
-          return { title: getThreadTitle(threadId) };
+          const params = route.params as { threadId?: string; name?: string } | undefined;
+          return { title: getThreadTitle(params?.threadId, params?.name) };
         }}
       />
     </Stack>

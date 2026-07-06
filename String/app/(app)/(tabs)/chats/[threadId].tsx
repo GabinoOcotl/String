@@ -1,11 +1,13 @@
 import { useLocalSearchParams } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
@@ -15,41 +17,101 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { themeColors } from "@/constants/theme";
-
+import { useAuth } from "@/contexts/AuthContext";
+import { mapWorkerError } from "@/lib/api/mapWorkerError";
+import {
+  getMessages,
+  sendMessage as sendMessageApi,
+  type ChatMessage as ApiChatMessage,
+} from "@/lib/api/messages";
+import { workerConfigError } from "@/lib/api/workerClient";
 import { getThreadTitle } from "@/lib/chats/threads";
 
-type ChatMessage = {
+type ThreadMessage = {
   id: string;
   body: string;
   sender: string;
   isOwn: boolean;
 };
 
-const PLACEHOLDER_MESSAGES: Record<string, ChatMessage[]> = {
-  "calc-101": [
-    { id: "1", body: "Anyone going to the review session?", sender: "Alex", isOwn: false },
-    { id: "2", body: "See you at review session", sender: "You", isOwn: true },
-  ],
-  "cs-220": [
-    { id: "1", body: "Project groups are on the course site.", sender: "Sam", isOwn: false },
-    { id: "2", body: "Project groups posted", sender: "You", isOwn: true },
-  ],
-};
+function mapApiMessage(message: ApiChatMessage): ThreadMessage {
+  return {
+    id: message.id,
+    body: message.text,
+    sender: message.is_own ? "You" : message.sender_name,
+    isOwn: message.is_own,
+  };
+}
 
 export default function ChatThreadScreen() {
-  const { threadId } = useLocalSearchParams<{ threadId: string }>();
+  const { threadId, name } = useLocalSearchParams<{ threadId: string; name?: string }>();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
+  const { session } = useAuth();
+  const accessToken = session?.access_token;
 
   const id = typeof threadId === "string" ? threadId : "";
-  const title = getThreadTitle(id);
+  const roomName = typeof name === "string" ? name : undefined;
+  const title = getThreadTitle(id, roomName);
 
   const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(
-    () => PLACEHOLDER_MESSAGES[id] ?? [],
+  const [messages, setMessages] = useState<ThreadMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadMessages = useCallback(
+    async (isRefresh = false) => {
+      if (!id) {
+        setMessages([]);
+        setError("Invalid chat.");
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      if (!accessToken) {
+        setMessages([]);
+        setError("Sign in to view messages.");
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      if (workerConfigError) {
+        setMessages([]);
+        setError(workerConfigError);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      try {
+        const rows = await getMessages(id, accessToken);
+        setMessages(rows.map(mapApiMessage));
+      } catch (err) {
+        setError(mapWorkerError(err));
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [id, accessToken],
   );
+
+  useEffect(() => {
+    void loadMessages();
+  }, [loadMessages]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title });
@@ -65,15 +127,35 @@ export default function ChatThreadScreen() {
     };
   }, [navigation, title, colors.surface, colors.border]);
 
-  const sendMessage = useCallback(() => {
+  const sendMessage = useCallback(async () => {
     const body = draft.trim();
-    if (!body) return;
-    setMessages((prev) => [
-      ...prev,
-      { id: String(Date.now()), body, sender: "You", isOwn: true },
-    ]);
-    setDraft("");
-  }, [draft]);
+    if (!body || !id || !accessToken || sending) return;
+
+    setSending(true);
+    setError(null);
+
+    try {
+      const created = await sendMessageApi(id, body, accessToken);
+      setMessages((prev) => [...prev, mapApiMessage(created)]);
+      setDraft("");
+    } catch (err) {
+      setError(mapWorkerError(err));
+    } finally {
+      setSending(false);
+    }
+  }, [draft, id, accessToken, sending]);
+
+  const onRefresh = useCallback(() => {
+    void loadMessages(true);
+  }, [loadMessages]);
+
+  if (loading) {
+    return (
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -81,10 +163,29 @@ export default function ChatThreadScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
     >
+      {error ? (
+        <View style={[styles.errorBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.errorText, { color: colors.textMuted }]}>{error}</Text>
+        </View>
+      ) : null}
+
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messageList}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        ListEmptyComponent={
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+            No messages yet. Say hello!
+          </Text>
+        }
         renderItem={({ item }) => (
           <View
             style={[
@@ -131,7 +232,8 @@ export default function ChatThreadScreen() {
           onChangeText={setDraft}
           multiline
           maxLength={2000}
-          onSubmitEditing={sendMessage}
+          editable={!sending}
+          onSubmitEditing={() => void sendMessage()}
           blurOnSubmit={false}
         />
         <Pressable
@@ -139,12 +241,14 @@ export default function ChatThreadScreen() {
             styles.sendButton,
             { backgroundColor: colors.primary },
             pressed && styles.sendPressed,
-            !draft.trim() && styles.sendDisabled,
+            (!draft.trim() || sending) && styles.sendDisabled,
           ]}
-          onPress={sendMessage}
-          disabled={!draft.trim()}
+          onPress={() => void sendMessage()}
+          disabled={!draft.trim() || sending}
         >
-          <Text style={[styles.sendLabel, { color: colors.onPrimary }]}>Send</Text>
+          <Text style={[styles.sendLabel, { color: colors.onPrimary }]}>
+            {sending ? "…" : "Send"}
+          </Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -155,10 +259,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorBanner: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: "center",
+  },
   messageList: {
     padding: 16,
     gap: 10,
     flexGrow: 1,
+  },
+  emptyText: {
+    fontSize: 15,
+    textAlign: "center",
+    marginTop: 24,
   },
   bubble: {
     maxWidth: "82%",
