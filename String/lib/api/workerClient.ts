@@ -60,3 +60,25 @@ export async function workerFetch<T>(
 
   return response.json() as Promise<T>;
 }
+
+/** Like workerFetch but for endpoints that return 204 No Content. */
+export async function workerFetchNoContent(
+  path: string,
+  { accessToken, headers, ...init }: WorkerFetchOptions,
+): Promise<void> {
+  if (workerConfigError) {
+    throw new WorkerApiError(workerConfigError, 0);
+  }
+
+  const response = await fetch(buildWorkerUrl(path), {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new WorkerApiError(await parseErrorMessage(response), response.status);
+  }
+}

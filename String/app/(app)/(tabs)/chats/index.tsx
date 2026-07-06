@@ -13,6 +13,7 @@ import {
 import { ChatThreadCard } from "@/components/chats/ChatThreadCard";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { useChatRefresh } from "@/contexts/ChatRefreshContext";
 import { mapWorkerError } from "@/lib/api/mapWorkerError";
 import { workerConfigError } from "@/lib/api/workerClient";
 import { fetchChatThreads, type ChatThread } from "@/lib/chats/threads";
@@ -22,6 +23,7 @@ export default function ChatsListScreen() {
   const colorScheme = useColorScheme();
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
   const { session } = useAuth();
+  const { refreshKey } = useChatRefresh();
   const accessToken = session?.access_token;
 
   const [threads, setThreads] = useState<ChatThread[]>([]);
@@ -69,7 +71,7 @@ export default function ChatsListScreen() {
 
   useEffect(() => {
     void loadThreads();
-  }, [loadThreads]);
+  }, [loadThreads, refreshKey]);
 
   const onRefresh = useCallback(() => {
     void loadThreads(true);

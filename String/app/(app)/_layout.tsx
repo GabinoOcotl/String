@@ -5,6 +5,7 @@ import { AuthInitGate } from "@/components/auth/AuthInitGate";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { ScheduleProvider } from "@/contexts/ScheduleContext";
+import { ChatRefreshProvider } from "@/contexts/ChatRefreshContext";
 
 export default function AppGroupLayout() {
   const { session } = useAuth();
@@ -17,14 +18,16 @@ export default function AppGroupLayout() {
       {!session ? (
         <Redirect href="/login" />
       ) : (
-        <ScheduleProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.background },
-            }}
-          />
-        </ScheduleProvider>
+        <ChatRefreshProvider>
+          <ScheduleProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.background },
+              }}
+            />
+          </ScheduleProvider>
+        </ChatRefreshProvider>
       )}
     </AuthInitGate>
   );
