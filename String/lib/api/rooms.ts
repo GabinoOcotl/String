@@ -1,4 +1,4 @@
-import { workerFetch } from "@/lib/api/workerClient";
+import { workerFetch, workerFetchNoContent } from "@/lib/api/workerClient";
 
 export interface JoinSectionRoomPayload {
   subjectCode: string;
@@ -34,4 +34,14 @@ export async function joinSectionRoom(
 
 export async function getMyRooms(accessToken: string): Promise<RoomThread[]> {
   return workerFetch<RoomThread[]>("/rooms", { accessToken });
+}
+
+export async function leaveSectionRoom(
+  roomId: string,
+  accessToken: string,
+): Promise<void> {
+  await workerFetchNoContent(
+    `/rooms/${encodeURIComponent(roomId)}/membership`,
+    { method: "DELETE", accessToken },
+  );
 }

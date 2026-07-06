@@ -9,7 +9,8 @@ import {
 } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { joinSectionRoom } from "@/lib/api/rooms";
+import { useChatRefresh } from "@/contexts/ChatRefreshContext";
+import { joinSectionRoom, leaveSectionRoom } from "@/lib/api/rooms";
 import { workerConfigError } from "@/lib/api/workerClient";
 import {
   enrollmentClassNumberFromScheduleClass,
@@ -58,6 +59,7 @@ async function healSectionRoomJoins(
 
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   const { user, session } = useAuth();
+  const { notifyChatsChanged } = useChatRefresh();
   const accessToken = session?.access_token;
   const [classes, setClasses] = useState<ScheduleClass[]>([]);
   const [loading, setLoading] = useState(false);
@@ -158,14 +160,19 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       setError(null);
 
       try {
+        if (accessToken && !workerConfigError) {
+          await leaveSectionRoom(id, accessToken);
+        }
+
         const next = classes.filter((item) => item.id !== id);
         await persist(next);
+        notifyChatsChanged();
       } catch {
         setError("Could not update your schedule.");
         throw new Error("Could not update your schedule.");
       }
     },
-    [classes, persist],
+    [classes, persist, accessToken, notifyChatsChanged],
   );
 
   const hasClass = useCallback(
