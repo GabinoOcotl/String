@@ -26,6 +26,7 @@ import {
 } from "@/lib/api/messages";
 import { workerConfigError } from "@/lib/api/workerClient";
 import { getThreadTitle } from "@/lib/chats/threads";
+import { useRoomSocket } from "@/lib/chats/useRoomSocket";
 
 type ThreadMessage = {
   id: string;
@@ -51,6 +52,7 @@ export default function ChatThreadScreen() {
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
   const { session } = useAuth();
   const accessToken = session?.access_token;
+  const userId = session?.user?.id;
 
   const id = typeof threadId === "string" ? threadId : "";
   const roomName = typeof name === "string" ? name : undefined;
@@ -109,9 +111,26 @@ export default function ChatThreadScreen() {
     [id, accessToken],
   );
 
+  const appendMessage = useCallback((message: ApiChatMessage) => {
+    setMessages((prev) => {
+      if (prev.some((item) => item.id === message.id)) {
+        return prev;
+      }
+      return [...prev, mapApiMessage(message)];
+    });
+  }, []);
+
   useEffect(() => {
     void loadMessages();
   }, [loadMessages]);
+
+  useRoomSocket({
+    roomId: id,
+    accessToken,
+    userId,
+    enabled: Boolean(id && accessToken && !loading),
+    onMessage: appendMessage,
+  });
 
   useLayoutEffect(() => {
     navigation.setOptions({ title });
@@ -136,14 +155,14 @@ export default function ChatThreadScreen() {
 
     try {
       const created = await sendMessageApi(id, body, accessToken);
-      setMessages((prev) => [...prev, mapApiMessage(created)]);
+      appendMessage(created);
       setDraft("");
     } catch (err) {
       setError(mapWorkerError(err));
     } finally {
       setSending(false);
     }
-  }, [draft, id, accessToken, sending]);
+  }, [draft, id, accessToken, sending, appendMessage]);
 
   const onRefresh = useCallback(() => {
     void loadMessages(true);
