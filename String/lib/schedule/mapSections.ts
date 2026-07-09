@@ -8,13 +8,16 @@ import type { ScheduleClass } from "@/lib/schedule/types";
 
 const MS_PER_MINUTE = 60_000;
 
-export function formatMeetingTime(msSinceMidnight: number): string {
-  const totalMinutes = Math.floor(msSinceMidnight / MS_PER_MINUTE);
-  const hours24 = Math.floor(totalMinutes / 60) % 24;
-  const minutes = totalMinutes % 60;
-  const period = hours24 >= 12 ? "PM" : "AM";
-  const hours12 = hours24 % 12 || 12;
-  return `${hours12}:${minutes.toString().padStart(2, "0")} ${period}`;
+/** UW enrollment API encodes local Central meeting times as UTC epoch ms (1970-01-01). */
+const MEETING_TIME_ZONE = "America/Chicago";
+
+export function formatMeetingTime(meetingTimeMs: number): string {
+  return new Date(meetingTimeMs).toLocaleTimeString("en-US", {
+    timeZone: MEETING_TIME_ZONE,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 export function formatDuration(startMs: number, endMs: number): string {
