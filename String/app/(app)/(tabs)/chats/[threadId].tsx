@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { useChatRefresh } from "@/contexts/ChatRefreshContext";
 import { mapWorkerError } from "@/lib/api/mapWorkerError";
 import {
   getMessages,
@@ -51,6 +52,7 @@ export default function ChatThreadScreen() {
   const colorScheme = useColorScheme();
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
   const { session } = useAuth();
+  const { notifyChatsChanged } = useChatRefresh();
   const accessToken = session?.access_token;
   const userId = session?.user?.id;
 
@@ -157,12 +159,13 @@ export default function ChatThreadScreen() {
       const created = await sendMessageApi(id, body, accessToken);
       appendMessage(created);
       setDraft("");
+      notifyChatsChanged();
     } catch (err) {
       setError(mapWorkerError(err));
     } finally {
       setSending(false);
     }
-  }, [draft, id, accessToken, sending, appendMessage]);
+  }, [draft, id, accessToken, sending, appendMessage, notifyChatsChanged]);
 
   const onRefresh = useCallback(() => {
     void loadMessages(true);

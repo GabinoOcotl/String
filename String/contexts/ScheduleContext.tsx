@@ -143,6 +143,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         }
 
         await persist(next);
+        notifyChatsChanged();
       } catch (err) {
         const message =
           err instanceof Error && err.message.includes("already on your schedule")
@@ -152,7 +153,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         throw new Error(message);
       }
     },
-    [classes, getClassForCourse, persist],
+    [classes, getClassForCourse, persist, notifyChatsChanged],
   );
 
   const removeClass = useCallback(
