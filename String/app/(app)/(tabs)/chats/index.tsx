@@ -1,5 +1,6 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -18,6 +19,8 @@ import { mapWorkerError } from "@/lib/api/mapWorkerError";
 import { workerConfigError } from "@/lib/api/workerClient";
 import { fetchChatThreads, type ChatThread } from "@/lib/chats/threads";
 
+type LoadMode = "initial" | "pull" | "silent";
+
 export default function ChatsListScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -25,6 +28,7 @@ export default function ChatsListScreen() {
   const { session } = useAuth();
   const { refreshKey } = useChatRefresh();
   const accessToken = session?.access_token;
+  const hasLoadedRef = useRef(false);
 
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +36,7 @@ export default function ChatsListScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const loadThreads = useCallback(
-    async (isRefresh = false) => {
+    async (mode: LoadMode = "initial") => {
       if (!accessToken) {
         setThreads([]);
         setError("Sign in to view chats.");
@@ -49,18 +53,24 @@ export default function ChatsListScreen() {
         return;
       }
 
-      if (isRefresh) {
+      if (mode === "pull") {
         setRefreshing(true);
-      } else {
+      } else if (mode === "initial") {
         setLoading(true);
       }
-      setError(null);
+      // silent: keep showing current list; no spinner / RefreshControl inset
 
       try {
         const next = await fetchChatThreads(accessToken);
         setThreads(next);
+        setError(null);
+        hasLoadedRef.current = true;
       } catch (err) {
-        setError(mapWorkerError(err));
+        // Keep an existing list visible on background failures; only surface
+        // errors for user-visible loads (initial / pull-to-refresh).
+        if (mode !== "silent" || !hasLoadedRef.current) {
+          setError(mapWorkerError(err));
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -69,12 +79,28 @@ export default function ChatsListScreen() {
     [accessToken],
   );
 
+  // Initial load + access-token changes only (not every refreshKey bump).
   useEffect(() => {
-    void loadThreads();
-  }, [loadThreads, refreshKey]);
+    void loadThreads("initial");
+  }, [loadThreads]);
+
+  // Eager refetch when schedule/send invalidates — silent so the list stays mounted.
+  useEffect(() => {
+    if (refreshKey === 0) return;
+    void loadThreads("silent");
+  }, [refreshKey, loadThreads]);
+
+  // Covers inactive-tab / stack cases where refreshKey effects can be missed until
+  // the list regains focus (back from thread, or switch from Schedule).
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasLoadedRef.current) return;
+      void loadThreads("silent");
+    }, [loadThreads]),
+  );
 
   const onRefresh = useCallback(() => {
-    void loadThreads(true);
+    void loadThreads("pull");
   }, [loadThreads]);
 
   if (loading) {
