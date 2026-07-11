@@ -15,9 +15,10 @@ import { ChatThreadCard } from "@/components/chats/ChatThreadCard";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatRefresh } from "@/contexts/ChatRefreshContext";
+import { useSchedule } from "@/contexts/ScheduleContext";
 import { mapWorkerError } from "@/lib/api/mapWorkerError";
 import { workerConfigError } from "@/lib/api/workerClient";
-import { fetchChatThreads, type ChatThread } from "@/lib/chats/threads";
+import { fetchChatThreads, resolveThreadTitle, type ChatThread } from "@/lib/chats/threads";
 
 type LoadMode = "initial" | "pull" | "silent";
 
@@ -27,6 +28,7 @@ export default function ChatsListScreen() {
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
   const { session } = useAuth();
   const { refreshKey } = useChatRefresh();
+  const { classes } = useSchedule();
   const accessToken = session?.access_token;
   const hasLoadedRef = useRef(false);
 
@@ -138,18 +140,25 @@ export default function ChatsListScreen() {
           Add a class to your schedule to join its group chat.
         </Text>
       }
-      renderItem={({ item }) => (
-        <ChatThreadCard
-          className={item.className}
-          lastMessage={item.lastMessage}
-          onPress={() =>
-            router.push({
-              pathname: "/chats/[threadId]",
-              params: { threadId: item.id, name: item.className },
-            })
-          }
-        />
-      )}
+      renderItem={({ item }) => {
+        const threadTitle = resolveThreadTitle(item.id, item.className, classes);
+
+        return (
+          <ChatThreadCard
+            className={threadTitle}
+            lastMessage={item.lastMessage}
+            onPress={() =>
+              router.push({
+                pathname: "/chats/[threadId]",
+                params: {
+                  threadId: item.id,
+                  name: threadTitle,
+                },
+              })
+            }
+          />
+        );
+      }}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
     />
   );

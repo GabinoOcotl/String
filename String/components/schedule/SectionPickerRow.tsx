@@ -6,6 +6,7 @@ import type { ClassMeeting, EnrollmentPackage } from "@/lib/api/types/enrollment
 import {
   formatLocation,
   formatMeetingTime,
+  formatSectionHeader,
 } from "@/lib/schedule/mapSections";
 
 export type SectionRowState = "available" | "added" | "blocked";
@@ -88,7 +89,7 @@ export function SectionPickerRow({
           <View style={styles.row}>
             <View style={styles.content}>
               <Text style={[styles.sectionNumber, { color: colors.text }]}>
-                Section {pkg.enrollmentClassNumber}
+                {formatSectionHeader(pkg)}
               </Text>
               <Text style={[styles.meeting, { color: colors.textMuted }]} numberOfLines={2}>
                 {meetingSummary}

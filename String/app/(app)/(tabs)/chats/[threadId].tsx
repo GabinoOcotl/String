@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { themeColors } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatRefresh } from "@/contexts/ChatRefreshContext";
+import { useSchedule } from "@/contexts/ScheduleContext";
 import { mapWorkerError } from "@/lib/api/mapWorkerError";
 import {
   getMessages,
@@ -26,7 +27,7 @@ import {
   type ChatMessage as ApiChatMessage,
 } from "@/lib/api/messages";
 import { workerConfigError } from "@/lib/api/workerClient";
-import { getThreadTitle } from "@/lib/chats/threads";
+import { resolveThreadTitle } from "@/lib/chats/threads";
 import { useRoomSocket } from "@/lib/chats/useRoomSocket";
 
 type ThreadMessage = {
@@ -53,12 +54,13 @@ export default function ChatThreadScreen() {
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
   const { session } = useAuth();
   const { notifyChatsChanged } = useChatRefresh();
+  const { classes } = useSchedule();
   const accessToken = session?.access_token;
   const userId = session?.user?.id;
 
   const id = typeof threadId === "string" ? threadId : "";
   const roomName = typeof name === "string" ? name : undefined;
-  const title = getThreadTitle(id, roomName);
+  const title = resolveThreadTitle(id, roomName, classes);
 
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<ThreadMessage[]>([]);

@@ -177,12 +177,86 @@ export function enrollmentClassNumberFromScheduleClass(klass: ScheduleClass): st
   return klass.id.startsWith(prefix) ? klass.id.slice(prefix.length) : klass.id;
 }
 
+function sectionNumbersFromPackage(pkg: EnrollmentPackage): {
+  lectureSectionNumber?: string;
+  discussionSectionNumber?: string;
+} {
+  const lec = pkg.sections?.find((s) => s.type === "LEC");
+  const dis = pkg.sections?.find((s) => s.type === "DIS");
+
+  return {
+    lectureSectionNumber: lec?.sectionNumber,
+    discussionSectionNumber: dis?.sectionNumber,
+  };
+}
+
+export function formatSectionNumberDisplay(sectionNumber: string): string {
+  const trimmed = sectionNumber.replace(/^0+/, "");
+  return trimmed || "0";
+}
+
+export function formatSectionHeaderParts(
+  enrollmentClassNumber: number | string,
+  lectureSectionNumber?: string,
+  discussionSectionNumber?: string,
+): string {
+  const parts: string[] = [];
+
+  if (lectureSectionNumber) {
+    parts.push(`Lec ${formatSectionNumberDisplay(lectureSectionNumber)}`);
+  }
+  if (discussionSectionNumber) {
+    parts.push(`Dis ${discussionSectionNumber}`);
+  }
+  parts.push(`Section ${enrollmentClassNumber}`);
+
+  return parts.join(" | ");
+}
+
+export function formatSectionHeader(pkg: EnrollmentPackage): string {
+  const { lectureSectionNumber, discussionSectionNumber } =
+    sectionNumbersFromPackage(pkg);
+
+  return formatSectionHeaderParts(
+    pkg.enrollmentClassNumber,
+    lectureSectionNumber,
+    discussionSectionNumber,
+  );
+}
+
+export function formatScheduleClassHeader(klass: ScheduleClass): string {
+  return formatSectionHeaderParts(
+    enrollmentClassNumberFromScheduleClass(klass),
+    klass.lectureSectionNumber,
+    klass.discussionSectionNumber,
+  );
+}
+
+export function formatChatThreadTitle(
+  courseName: string,
+  lectureSectionNumber?: string,
+  discussionSectionNumber?: string,
+): string {
+  const parts = [courseName.trim() || "Chat"];
+
+  if (lectureSectionNumber) {
+    parts.push(`L ${formatSectionNumberDisplay(lectureSectionNumber)}`);
+  }
+  if (discussionSectionNumber) {
+    parts.push(`D ${formatSectionNumberDisplay(discussionSectionNumber)}`);
+  }
+
+  return parts.join(" - ");
+}
+
 export function scheduleClassFromPackage(
   hit: CourseSearchHit,
   pkg: EnrollmentPackage,
 ): ScheduleClass {
   const meeting = pickPrimaryMeeting(pkg);
   const subjectCode = hit.subject.subjectCode;
+  const { lectureSectionNumber, discussionSectionNumber } =
+    sectionNumbersFromPackage(pkg);
 
   return {
     id: scheduleClassId(hit, pkg),
@@ -200,5 +274,7 @@ export function scheduleClassFromPackage(
         : "Duration TBD",
     professor: formatProfessor(pkg),
     meetingDays: meeting?.meetingDays ?? undefined,
+    lectureSectionNumber,
+    discussionSectionNumber,
   };
 }
