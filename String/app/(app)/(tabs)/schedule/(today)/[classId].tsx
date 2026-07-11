@@ -5,6 +5,10 @@ import { useNavigation } from "@react-navigation/native";
 
 import { themeColors } from "@/constants/theme";
 import { useSchedule } from "@/contexts/ScheduleContext";
+import {
+  enrollmentClassNumberFromScheduleClass,
+  formatSectionNumberDisplay,
+} from "@/lib/schedule/mapSections";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   const colorScheme = useColorScheme();
@@ -57,6 +61,22 @@ export default function ClassDetailScreen() {
         ) : null}
         <DetailRow label="Location" value={scheduleClass.location} />
         <DetailRow label="Instructor" value={scheduleClass.professor} />
+        {scheduleClass.lectureSectionNumber ? (
+          <DetailRow
+            label="Lecture"
+            value={formatSectionNumberDisplay(scheduleClass.lectureSectionNumber)}
+          />
+        ) : null}
+        {scheduleClass.discussionSectionNumber ? (
+          <DetailRow
+            label="Discussion"
+            value={formatSectionNumberDisplay(scheduleClass.discussionSectionNumber)}
+          />
+        ) : null}
+        <DetailRow
+          label="Section"
+          value={enrollmentClassNumberFromScheduleClass(scheduleClass)}
+        />
       </View>
     </View>
   );

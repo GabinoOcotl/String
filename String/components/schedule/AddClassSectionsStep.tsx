@@ -14,7 +14,7 @@ import { SectionPickerRow, type SectionRowState } from "@/components/schedule/Se
 import { themeColors } from "@/constants/theme";
 import type { CourseSearchHit } from "@/lib/api/types/enrollment";
 import {
-  enrollmentClassNumberFromScheduleClass,
+  formatScheduleClassHeader,
   scheduleClassId,
 } from "@/lib/schedule/mapSections";
 import { useCourseSections } from "@/lib/schedule/useCourseSections";
@@ -69,8 +69,8 @@ export function AddClassSectionsStep({ course, onBack }: AddClassSectionsStepPro
     course.subject.subjectCode,
     course.courseId,
   );
-  const blockedSectionNumber = scheduledForCourse
-    ? enrollmentClassNumberFromScheduleClass(scheduledForCourse)
+  const blockedSectionLabel = scheduledForCourse
+    ? formatScheduleClassHeader(scheduledForCourse)
     : null;
 
   const courseTitle =
@@ -124,8 +124,8 @@ export function AddClassSectionsStep({ course, onBack }: AddClassSectionsStepPro
             }
 
             const blockedMessage =
-              state === "blocked" && blockedSectionNumber
-                ? `Remove Section ${blockedSectionNumber} from schedule to choose another`
+              state === "blocked" && blockedSectionLabel
+                ? `Remove ${blockedSectionLabel} from schedule to choose another`
                 : undefined;
 
             return (

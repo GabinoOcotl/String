@@ -8,4 +8,6 @@ export type ScheduleClass = {
   duration: string;
   professor: string;
   meetingDays?: string;
+  lectureSectionNumber?: string;
+  discussionSectionNumber?: string;
 };
