@@ -240,10 +240,10 @@ export function formatChatThreadTitle(
   const parts = [courseName.trim() || "Chat"];
 
   if (lectureSectionNumber) {
-    parts.push(`L ${formatSectionNumberDisplay(lectureSectionNumber)}`);
+    parts.push(`Lec ${formatSectionNumberDisplay(lectureSectionNumber)}`);
   }
   if (discussionSectionNumber) {
-    parts.push(`D ${formatSectionNumberDisplay(discussionSectionNumber)}`);
+    parts.push(`Dis ${formatSectionNumberDisplay(discussionSectionNumber)}`);
   }
 
   return parts.join(" - ");
