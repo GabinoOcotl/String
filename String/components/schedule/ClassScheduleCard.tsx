@@ -8,6 +8,8 @@ export type ClassScheduleCardProps = {
   duration: string;
   location: string;
   professor: string;
+  /** Optional meeting-days label (e.g. All mode). */
+  meetingDays?: string;
   onPress: () => void;
 };
 
@@ -17,6 +19,7 @@ export function ClassScheduleCard({
   duration,
   location,
   professor,
+  meetingDays,
   onPress,
 }: ClassScheduleCardProps) {
   const colorScheme = useColorScheme();
@@ -33,6 +36,7 @@ export function ClassScheduleCard({
     >
       <Text style={[styles.className, { color: colors.text }]}>{name}</Text>
       <Text style={[styles.meta, { color: colors.textMuted }]}>
+        {meetingDays ? `${meetingDays} · ` : ""}
         {startTime} · {duration}
       </Text>
       <Text style={[styles.meta, { color: colors.textMuted }]}>{location}</Text>
