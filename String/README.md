@@ -35,6 +35,10 @@ npm run reset-project
 
 This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
+## Campus route map
+
+See [`lib/schedule/maps-setup.md`](./lib/schedule/maps-setup.md) for `react-native-maps`, Android Google Maps API key, and EAS development-build notes.
+
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:
