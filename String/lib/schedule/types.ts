@@ -13,6 +13,10 @@ export type ScheduleClass = {
   meetingWeekdays: number[];
   /** Raw meeting start ms (UW epoch encoding) for sorting within a day. */
   meetingTimeStartMs?: number;
+  /** Building coords from primary CLASS meeting; null when unknown. */
+  latitude?: number | null;
+  longitude?: number | null;
+  buildingName?: string;
   lectureSectionNumber?: string;
   discussionSectionNumber?: string;
 };

@@ -43,7 +43,13 @@ export interface ClassMeeting {
   meetingTimeEnd?: number;
   meetingDays?: string | null;
   meetingDaysList?: string[];
-  building?: { buildingName: string; buildingCode?: string } | null;
+  building?: {
+    buildingName: string;
+    buildingCode?: string;
+    latitude?: number;
+    longitude?: number;
+    streetAddress?: string;
+  } | null;
   room?: string | null;
   monday?: boolean;
   tuesday?: boolean;
