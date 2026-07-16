@@ -103,7 +103,11 @@ export function AddClassSectionsStep({ course, onBack }: AddClassSectionsStepPro
       ) : (
         <FlatList
           data={packages}
-          keyExtractor={(item) => item.id || String(item.enrollmentClassNumber)}
+          keyExtractor={(item, index) =>
+            // UW can reuse enrollmentPackage.id across lecture+discussion combos;
+            // docId is unique (e.g. ANTHRO 100 LEC 001/002 sharing DIS 301).
+            item.docId || `${item.id || item.enrollmentClassNumber}-${index}`
+          }
           contentContainerStyle={[styles.list, { paddingBottom: 16 + insets.bottom }]}
           ListEmptyComponent={
             <SectionsEmptyState loading={loading} error={error} />
