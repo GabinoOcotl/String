@@ -16,6 +16,10 @@ import {
   enrollmentClassNumberFromScheduleClass,
   scheduleCourseKey,
 } from "@/lib/schedule/mapSections";
+import {
+  schoolWeekday,
+  type WeekdayIndex,
+} from "@/lib/schedule/meetingDays";
 import { loadSchedule, saveSchedule } from "@/lib/schedule/storage";
 import type { ScheduleClass } from "@/lib/schedule/types";
 
@@ -23,6 +27,9 @@ type ScheduleContextValue = {
   classes: ScheduleClass[];
   loading: boolean;
   error: string | null;
+  /** Shared weekday for Day mode + Route (0=Sun … 6=Sat). */
+  selectedWeekday: WeekdayIndex;
+  setSelectedWeekday: (weekday: WeekdayIndex) => void;
   addClass: (entry: ScheduleClass) => Promise<void>;
   removeClass: (id: string) => Promise<void>;
   reload: () => Promise<void>;
@@ -64,6 +71,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [classes, setClasses] = useState<ScheduleClass[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedWeekday, setSelectedWeekday] = useState<WeekdayIndex>(schoolWeekday);
 
   const reload = useCallback(async () => {
     if (!user?.id) {
@@ -186,6 +194,8 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       classes,
       loading,
       error,
+      selectedWeekday,
+      setSelectedWeekday,
       addClass,
       removeClass,
       reload,
@@ -197,6 +207,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       classes,
       loading,
       error,
+      selectedWeekday,
       addClass,
       removeClass,
       reload,

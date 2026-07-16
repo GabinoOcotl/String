@@ -4,6 +4,7 @@ import type {
   EnrollmentPackage,
   EnrollmentSection,
 } from "@/lib/api/types/enrollment";
+import { parseMeetingWeekdaysFromMeeting } from "@/lib/schedule/meetingDays";
 import type { ScheduleClass } from "@/lib/schedule/types";
 
 const MS_PER_MINUTE = 60_000;
@@ -274,6 +275,8 @@ export function scheduleClassFromPackage(
         : "Duration TBD",
     professor: formatProfessor(pkg),
     meetingDays: meeting?.meetingDays ?? undefined,
+    meetingWeekdays: parseMeetingWeekdaysFromMeeting(meeting),
+    meetingTimeStartMs: meeting?.meetingTimeStart ?? undefined,
     lectureSectionNumber,
     discussionSectionNumber,
   };

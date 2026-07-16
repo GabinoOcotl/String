@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { migrateScheduleClasses } from "@/lib/schedule/meetingDays";
 import type { ScheduleClass } from "@/lib/schedule/types";
 
 const storageKey = (userId: string) => `schedule:${userId}`;
@@ -15,7 +16,16 @@ export async function loadSchedule(userId: string): Promise<ScheduleClass[]> {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed as ScheduleClass[];
+
+    const { classes, changed } = migrateScheduleClasses(
+      parsed as Array<Partial<ScheduleClass> & Pick<ScheduleClass, "id">>,
+    );
+
+    if (changed) {
+      await AsyncStorage.setItem(storageKey(userId), JSON.stringify(classes));
+    }
+
+    return classes;
   } catch {
     return [];
   }
