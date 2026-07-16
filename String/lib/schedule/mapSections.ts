@@ -250,6 +250,21 @@ export function formatChatThreadTitle(
   return parts.join(" - ");
 }
 
+function coordsFromMeeting(meeting: ClassMeeting | undefined): {
+  latitude: number | null;
+  longitude: number | null;
+  buildingName?: string;
+} {
+  const building = meeting?.building;
+  const latitude =
+    typeof building?.latitude === "number" ? building.latitude : null;
+  const longitude =
+    typeof building?.longitude === "number" ? building.longitude : null;
+  const buildingName = building?.buildingName?.trim() || undefined;
+
+  return { latitude, longitude, buildingName };
+}
+
 export function scheduleClassFromPackage(
   hit: CourseSearchHit,
   pkg: EnrollmentPackage,
@@ -258,6 +273,7 @@ export function scheduleClassFromPackage(
   const subjectCode = hit.subject.subjectCode;
   const { lectureSectionNumber, discussionSectionNumber } =
     sectionNumbersFromPackage(pkg);
+  const { latitude, longitude, buildingName } = coordsFromMeeting(meeting);
 
   return {
     id: scheduleClassId(hit, pkg),
@@ -277,6 +293,9 @@ export function scheduleClassFromPackage(
     meetingDays: meeting?.meetingDays ?? undefined,
     meetingWeekdays: parseMeetingWeekdaysFromMeeting(meeting),
     meetingTimeStartMs: meeting?.meetingTimeStart ?? undefined,
+    latitude,
+    longitude,
+    buildingName,
     lectureSectionNumber,
     discussionSectionNumber,
   };
