@@ -19,10 +19,12 @@ import {
   markerDescription,
   markerTitle,
   stopListLabel,
+  unmappedClassLabel,
   UW_CAMPUS_REGION,
   type RouteStop,
 } from "@/lib/schedule/routeStops";
 import { useScheduleForDay } from "@/lib/schedule/useScheduleForDay";
+import { useWalkingRoute } from "@/lib/schedule/useWalkingRoute";
 
 function regionForStops(stops: RouteStop[]): Region {
   if (stops.length === 0) {
@@ -66,10 +68,17 @@ export default function RouteMapScreen() {
   const mapRef = useRef<MapView>(null);
   const [showUserLocation, setShowUserLocation] = useState(false);
 
-  const { stops, missingCoordCount } = useMemo(
+  const { stops, missingCoordCount, unmappedClasses } = useMemo(
     () => buildRouteStops(classes),
     [classes],
   );
+
+  const {
+    coordinates: polylineCoords,
+    source: pathSource,
+    distanceMeters,
+    durationSeconds,
+  } = useWalkingRoute(stops);
 
   const realToday = todayWeekday();
   const isSchoolToday = realToday >= 1 && realToday <= 5;
@@ -80,14 +89,25 @@ export default function RouteMapScreen() {
   const emptyLabel = `No classes on ${weekdayName(weekday)}`;
   const mapsNative = Platform.OS === "ios" || Platform.OS === "android";
 
-  const polylineCoords = useMemo(
-    () =>
-      stops.map((stop) => ({
-        latitude: stop.latitude,
-        longitude: stop.longitude,
-      })),
-    [stops],
-  );
+  const pathSummary = useMemo(() => {
+    if (pathSource !== "walking") {
+      return null;
+    }
+    const parts: string[] = [];
+    if (typeof distanceMeters === "number" && distanceMeters > 0) {
+      const miles = distanceMeters / 1609.344;
+      parts.push(
+        miles < 0.1
+          ? `${Math.round(distanceMeters)} m`
+          : `${miles.toFixed(1)} mi`,
+      );
+    }
+    if (typeof durationSeconds === "number" && durationSeconds > 0) {
+      const minutes = Math.max(1, Math.round(durationSeconds / 60));
+      parts.push(`~${minutes} min walk`);
+    }
+    return parts.length > 0 ? parts.join(" · ") : "Walking path";
+  }, [distanceMeters, durationSeconds, pathSource]);
 
   const fitMap = useCallback(() => {
     if (!mapsNative || stops.length === 0) {
@@ -97,7 +117,14 @@ export default function RouteMapScreen() {
       mapRef.current?.animateToRegion(regionForStops(stops), 350);
       return;
     }
-    mapRef.current?.fitToCoordinates(polylineCoords, {
+    const fitCoords =
+      polylineCoords.length >= 2
+        ? polylineCoords
+        : stops.map((stop) => ({
+            latitude: stop.latitude,
+            longitude: stop.longitude,
+          }));
+    mapRef.current?.fitToCoordinates(fitCoords, {
       edgePadding: { top: 48, right: 48, bottom: 48, left: 48 },
       animated: true,
     });
@@ -137,6 +164,16 @@ export default function RouteMapScreen() {
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           {dayLabel}
         </Text>
+        {pathSummary ? (
+          <Text style={[styles.banner, { color: colors.textMuted }]}>
+            {pathSummary}
+          </Text>
+        ) : null}
+        {hasStops && pathSource === "straight" ? (
+          <Text style={[styles.banner, { color: colors.textMuted }]}>
+            Showing straight lines between buildings (walking path unavailable)
+          </Text>
+        ) : null}
         {hasClasses && missingCoordCount > 0 ? (
           <Text
             style={[styles.banner, { color: colors.error }]}
@@ -219,6 +256,38 @@ export default function RouteMapScreen() {
             <Text style={[styles.listHeading, { color: colors.text }]}>
               Stops
             </Text>
+          ) : null
+        }
+        ListFooterComponent={
+          unmappedClasses.length > 0 ? (
+            <View style={styles.unmappedSection}>
+              <Text style={[styles.listHeading, { color: colors.error }]}>
+                Missing map pins
+              </Text>
+              {unmappedClasses.map((klass) => (
+                <View
+                  key={klass.id}
+                  style={[
+                    styles.stopCard,
+                    styles.unmappedCard,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.error,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.stopLabel, { color: colors.text }]}>
+                    {unmappedClassLabel(klass)}
+                  </Text>
+                  <Text
+                    style={[styles.unmappedAlert, { color: colors.error }]}
+                    accessibilityRole="alert"
+                  >
+                    No map pin — this class has no building coordinates
+                  </Text>
+                </View>
+              ))}
+            </View>
           ) : null
         }
         ListEmptyComponent={
@@ -318,5 +387,17 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 10,
+  },
+  unmappedSection: {
+    marginTop: 16,
+    gap: 10,
+  },
+  unmappedCard: {
+    gap: 6,
+  },
+  unmappedAlert: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
   },
 });

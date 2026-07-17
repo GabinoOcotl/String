@@ -32,20 +32,21 @@ function sameBuilding(a: ScheduleClass, b: ScheduleClass): boolean {
 
 /**
  * Day’s classes → map stops: keep those with lat/lng, drop consecutive
- * identical buildings, report how many lacked coordinates.
+ * identical buildings, and return unmapped classes for UI alerts.
  */
 export function buildRouteStops(classes: ScheduleClass[]): {
   stops: RouteStop[];
   missingCoordCount: number;
+  unmappedClasses: ScheduleClass[];
 } {
-  let missingCoordCount = 0;
   const withCoords: ScheduleClass[] = [];
+  const unmappedClasses: ScheduleClass[] = [];
 
   for (const klass of classes) {
     if (hasValidCoords(klass)) {
       withCoords.push(klass);
     } else {
-      missingCoordCount += 1;
+      unmappedClasses.push(klass);
     }
   }
 
@@ -71,7 +72,18 @@ export function buildRouteStops(classes: ScheduleClass[]): {
     });
   }
 
-  return { stops, missingCoordCount };
+  return {
+    stops,
+    missingCoordCount: unmappedClasses.length,
+    unmappedClasses,
+  };
+}
+
+/** Label for a day’s class that has no map pin. */
+export function unmappedClassLabel(klass: ScheduleClass): string {
+  const time = klass.startTime?.trim() || "TBD";
+  const place = klass.location?.trim() || "Location TBD";
+  return `${klass.name} · ${place} · ${time}`;
 }
 
 export function stopListLabel(stop: RouteStop, index: number): string {
