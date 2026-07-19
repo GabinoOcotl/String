@@ -19,7 +19,7 @@ type WorkerFetchOptions = Omit<RequestInit, "headers"> & {
   headers?: Record<string, string>;
 };
 
-function buildWorkerUrl(path: string): string {
+export function buildWorkerUrl(path: string): string {
   const base = workerUrl!.replace(/\/$/, "");
   return path.startsWith("/") ? `${base}${path}` : `${base}/${path}`;
 }
@@ -81,4 +81,28 @@ export async function workerFetchNoContent(
   if (!response.ok) {
     throw new WorkerApiError(await parseErrorMessage(response), response.status);
   }
+}
+
+/** Authenticated request for binary or otherwise non-JSON responses. */
+export async function workerFetchResponse(
+  path: string,
+  { accessToken, headers, ...init }: WorkerFetchOptions,
+): Promise<Response> {
+  if (workerConfigError) {
+    throw new WorkerApiError(workerConfigError, 0);
+  }
+
+  const response = await fetch(buildWorkerUrl(path), {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new WorkerApiError(await parseErrorMessage(response), response.status);
+  }
+
+  return response;
 }

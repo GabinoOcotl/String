@@ -26,6 +26,15 @@ module.exports = () => {
             "Allow String to show your location on the campus walking route.",
         },
       ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "Allow String to choose a photo for your profile.",
+          cameraPermission: false,
+          microphonePermission: false,
+        },
+      ],
     ],
   };
 };
