@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
+import { InteractionManager } from "react-native";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useSchedule } from "@/contexts/ScheduleContext";
@@ -94,6 +95,7 @@ export function useCourseSections(course: CourseSearchHit) {
 
       if (!accessToken) {
         setError("Sign in to add classes.");
+        setAddingId(null);
         return;
       }
 
@@ -108,8 +110,19 @@ export function useCourseSections(course: CourseSearchHit) {
           },
           accessToken,
         );
-        await addClass(entry);
+
+        // Dismiss the modal BEFORE mutating the Today FlatList. Updating
+        // schedule while the sections FlatList unmounts races Fabric on
+        // Android (addViewAt / child already has a parent via clipping).
         router.back();
+
+        await new Promise<void>((resolve) => {
+          InteractionManager.runAfterInteractions(() => {
+            requestAnimationFrame(() => resolve());
+          });
+        });
+
+        await addClass(entry);
       } catch (err) {
         setError(mapWorkerError(err));
       } finally {

@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useChatRefresh } from "@/contexts/ChatRefreshContext";
 import { joinSectionRoom, leaveSectionRoom } from "@/lib/api/rooms";
 import { workerConfigError } from "@/lib/api/workerClient";
+import { hydrateScheduleFromRooms } from "@/lib/schedule/hydrateFromRooms";
 import {
   enrollmentClassNumberFromScheduleClass,
   scheduleCourseKey,
@@ -85,7 +86,20 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      const next = await loadSchedule(user.id);
+      let next = await loadSchedule(user.id);
+
+      if (accessToken && !workerConfigError) {
+        try {
+          const hydrated = await hydrateScheduleFromRooms(next, accessToken);
+          if (hydrated.added > 0) {
+            await saveSchedule(user.id, hydrated.classes);
+            next = hydrated.classes;
+          }
+        } catch {
+          // Keep local schedule if room hydration fails (offline / API error).
+        }
+      }
+
       setClasses(next);
 
       if (accessToken && !workerConfigError && next.length > 0) {

@@ -78,6 +78,8 @@ export function AddClassSearchStep({
         <FlatList
           data={results}
           keyExtractor={(item) => `${item.subject.subjectCode}-${item.courseId}`}
+          // Fabric on Android: clipping during step/modal transitions can crash.
+          removeClippedSubviews={false}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={

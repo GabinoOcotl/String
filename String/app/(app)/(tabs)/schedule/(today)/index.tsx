@@ -213,6 +213,8 @@ export default function TodayScheduleScreen() {
     <FlatList
       data={displayedClasses}
       keyExtractor={(item) => item.id}
+      // Fabric + swipeable rows: clipping remounts can crash on Android.
+      removeClippedSubviews={false}
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       refreshControl={

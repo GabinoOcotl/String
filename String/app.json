@@ -9,9 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gocotl.string"
     },
     "android": {
+      "package": "com.gocotl.string",
       "adaptiveIcon": {
         "backgroundColor": "#272757",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -49,6 +51,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d58986f1-f599-4a35-bb78-949d134980f1"
+      }
     }
   }
 }

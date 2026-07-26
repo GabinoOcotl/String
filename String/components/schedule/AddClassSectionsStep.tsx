@@ -108,6 +108,7 @@ export function AddClassSectionsStep({ course, onBack }: AddClassSectionsStepPro
             // docId is unique (e.g. ANTHRO 100 LEC 001/002 sharing DIS 301).
             item.docId || `${item.id || item.enrollmentClassNumber}-${index}`
           }
+          removeClippedSubviews={false}
           contentContainerStyle={[styles.list, { paddingBottom: 16 + insets.bottom }]}
           ListEmptyComponent={
             <SectionsEmptyState loading={loading} error={error} />
