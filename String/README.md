@@ -37,7 +37,17 @@ This command will move the starter code to the **app-example** directory and cre
 
 ## Campus route map
 
-See [`lib/schedule/maps-setup.md`](./lib/schedule/maps-setup.md) for `react-native-maps`, Android Google Maps API key, and EAS development-build notes.
+See [`lib/schedule/maps-setup.md`](./lib/schedule/maps-setup.md) for:
+
+- Android package `com.gocotl.string` and EAS profiles (`eas.json`)
+- Google Maps API key restrictions (package + SHA-1)
+- Location permission safety net (deny / settings / Center on me)
+
+```bash
+npm run verify:android-maps
+npm run verify:location
+```
+
 
 ## Learn more
 
