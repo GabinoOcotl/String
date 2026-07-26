@@ -1,5 +1,4 @@
-import * as Location from "expo-location";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   FlatList,
   Platform,
@@ -10,9 +9,11 @@ import {
 } from "react-native";
 import MapView, { Marker, Polyline, type Region } from "react-native-maps";
 
+import { LocationPermissionBanner } from "@/components/schedule/LocationPermissionBanner";
 import { ScheduleLoadingCenter } from "@/components/schedule/ScheduleLoadingCenter";
 import { themeColors } from "@/constants/theme";
 import { useSchedule } from "@/contexts/ScheduleContext";
+import { useForegroundLocation } from "@/lib/location/useForegroundLocation";
 import { todayWeekday, weekdayName } from "@/lib/schedule/meetingDays";
 import {
   buildRouteStops,
@@ -66,7 +67,14 @@ export default function RouteMapScreen() {
   const { loading } = useSchedule();
   const { classes, weekday } = useScheduleForDay();
   const mapRef = useRef<MapView>(null);
-  const [showUserLocation, setShowUserLocation] = useState(false);
+  const {
+    state: locationState,
+    showUserLocation,
+    requestPermission,
+    openSettings,
+    centerOnUser,
+    centering,
+  } = useForegroundLocation();
 
   const { stops, missingCoordCount, unmappedClasses } = useMemo(
     () => buildRouteStops(classes),
@@ -134,21 +142,21 @@ export default function RouteMapScreen() {
     fitMap();
   }, [fitMap]);
 
-  useEffect(() => {
-    if (!mapsNative) {
+  const handleCenterOnMe = useCallback(async () => {
+    const coords = await centerOnUser();
+    if (!coords || !mapsNative) {
       return;
     }
-    let cancelled = false;
-    void (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (!cancelled) {
-        setShowUserLocation(status === "granted");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [mapsNative]);
+    mapRef.current?.animateToRegion(
+      {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        latitudeDelta: 0.008,
+        longitudeDelta: 0.008,
+      },
+      400,
+    );
+  }, [centerOnUser, mapsNative]);
 
   if (loading && classes.length === 0) {
     return <ScheduleLoadingCenter />;
@@ -194,6 +202,23 @@ export default function RouteMapScreen() {
             No map pins for {weekdayName(weekday)} — class locations need
             coordinates.
           </Text>
+        ) : null}
+        {mapsNative ? (
+          <LocationPermissionBanner
+            state={locationState}
+            colors={colors}
+            onEnable={() => {
+              void requestPermission();
+            }}
+            onRetry={() => {
+              void requestPermission();
+            }}
+            onOpenSettings={openSettings}
+            onCenter={() => {
+              void handleCenterOnMe();
+            }}
+            centering={centering}
+          />
         ) : null}
       </View>
 

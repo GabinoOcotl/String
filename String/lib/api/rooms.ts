@@ -18,6 +18,11 @@ export interface RoomThread {
   name: string;
   lastMessage: string | null;
   lastMessageAt: string | null;
+  /** Present on newer worker builds; clients may also parse `id`. */
+  subjectCode?: string;
+  courseId?: string;
+  enrollmentClassNumber?: number;
+  courseDesignation?: string;
 }
 
 export async function joinSectionRoom(
