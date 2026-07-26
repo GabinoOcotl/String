@@ -15,6 +15,8 @@ export default function SignUpScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -25,7 +27,13 @@ export default function SignUpScreen() {
 
   async function onSubmit() {
     setError(null);
+    const trimmedFirst = firstName.trim();
+    const trimmedLast = lastName.trim();
     const trimmed = email.trim();
+    if (!trimmedFirst || !trimmedLast) {
+      setError("Please enter your first and last name.");
+      return;
+    }
     if (!trimmed || !password) {
       setError("Please enter your email and password.");
       return;
@@ -45,7 +53,10 @@ export default function SignUpScreen() {
 
     setLoading(true);
     try {
-      const { data, error: err } = await signUp(trimmed, password);
+      const { data, error: err } = await signUp(trimmed, password, {
+        firstName: trimmedFirst,
+        lastName: trimmedLast,
+      });
       if (err) {
         setError(mapAuthError(err));
         return;
@@ -78,6 +89,10 @@ export default function SignUpScreen() {
 
       <AuthFields
         variant="signup"
+        firstName={firstName}
+        lastName={lastName}
+        onFirstNameChange={setFirstName}
+        onLastNameChange={setLastName}
         email={email}
         password={password}
         onEmailChange={setEmail}

@@ -11,7 +11,13 @@ import {
 } from "react";
 
 import { INIT_SESSION_ERROR, mapAuthError } from "@/lib/authErrors";
+import { updateMyProfile } from "@/lib/api/users";
 import { supabase, supabaseConfigError } from "@/lib/supabase";
+
+export type SignUpNames = {
+  firstName: string;
+  lastName: string;
+};
 
 type AuthContextValue = {
   session: Session | null;
@@ -22,14 +28,31 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => ReturnType<
     typeof supabase.auth.signInWithPassword
   >;
-  signUp: (email: string, password: string) => ReturnType<
-    typeof supabase.auth.signUp
-  >;
+  signUp: (
+    email: string,
+    password: string,
+    names: SignUpNames,
+  ) => ReturnType<typeof supabase.auth.signUp>;
   resendSignupEmail: (email: string) => ReturnType<typeof supabase.auth.resend>;
   signOut: () => ReturnType<typeof supabase.auth.signOut>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+async function syncNamesToWorker(
+  accessToken: string,
+  firstName: string,
+  lastName: string,
+): Promise<void> {
+  try {
+    await updateMyProfile(accessToken, {
+      first_name: firstName,
+      last_name: lastName,
+    });
+  } catch {
+    // D1 sync can retry on the next authenticated Worker call via JWT metadata.
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -105,9 +128,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return supabase.auth.signInWithPassword({ email, password });
   }, []);
 
-  const signUp = useCallback((email: string, password: string) => {
-    return supabase.auth.signUp({ email, password });
-  }, []);
+  const signUp = useCallback(
+    async (email: string, password: string, names: SignUpNames) => {
+      const firstName = names.firstName.trim();
+      const lastName = names.lastName.trim();
+      const result = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
+        },
+      });
+
+      if (!result.error && result.data.session?.access_token) {
+        await syncNamesToWorker(
+          result.data.session.access_token,
+          firstName,
+          lastName,
+        );
+      }
+
+      return result;
+    },
+    [],
+  );
 
   const resendSignupEmail = useCallback((email: string) => {
     return supabase.auth.resend({

@@ -2,14 +2,16 @@ import { Image } from "expo-image";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Linking,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   useColorScheme,
   View,
 } from "react-native";
@@ -22,6 +24,11 @@ import {
   uploadProfilePhoto,
 } from "@/lib/api/profilePhotos";
 import { mapWorkerError } from "@/lib/api/mapWorkerError";
+import {
+  getMyProfile,
+  updateMyProfile,
+  type UserProfile,
+} from "@/lib/api/users";
 import { workerConfigError } from "@/lib/api/workerClient";
 import { GENERIC_AUTH_ERROR, mapAuthError } from "@/lib/authErrors";
 
@@ -33,12 +40,70 @@ export default function ScheduleProfileScreen() {
   const colors = themeColors[isDark ? "dark" : "light"];
 
   const [error, setError] = useState<string | null>(null);
-  const [busyAction, setBusyAction] = useState<"upload" | "delete" | "signout" | null>(
-    null,
-  );
+  const [busyAction, setBusyAction] = useState<
+    "upload" | "delete" | "signout" | "save" | "load" | null
+  >(null);
   const [hasPhoto, setHasPhoto] = useState(true);
   const [photoVersion, setPhotoVersion] = useState("initial");
   const [retryUri, setRetryUri] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [description, setDescription] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  const accessToken = session?.access_token;
+
+  const loadProfile = useCallback(async () => {
+    if (!accessToken) return;
+    setBusyAction("load");
+    setError(null);
+    try {
+      const profile: UserProfile = await getMyProfile(accessToken);
+      setFirstName(profile.first_name ?? "");
+      setLastName(profile.last_name ?? "");
+      setDescription(profile.description ?? "");
+      setProfileLoaded(true);
+    } catch (loadError) {
+      setError(mapWorkerError(loadError));
+    } finally {
+      setBusyAction(null);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
+
+  async function onSaveProfile() {
+    if (!accessToken) {
+      setError("Your session expired. Sign in again.");
+      return;
+    }
+
+    const trimmedFirst = firstName.trim();
+    const trimmedLast = lastName.trim();
+    if (!trimmedFirst || !trimmedLast) {
+      setError("Please enter your first and last name.");
+      return;
+    }
+
+    setBusyAction("save");
+    setError(null);
+    try {
+      const profile = await updateMyProfile(accessToken, {
+        first_name: trimmedFirst,
+        last_name: trimmedLast,
+        description: description.trim() || null,
+      });
+      setFirstName(profile.first_name ?? "");
+      setLastName(profile.last_name ?? "");
+      setDescription(profile.description ?? "");
+    } catch (saveError) {
+      setError(mapWorkerError(saveError));
+    } finally {
+      setBusyAction(null);
+    }
+  }
 
   async function onSignOut() {
     setError(null);
@@ -58,7 +123,6 @@ export default function ScheduleProfileScreen() {
   }
 
   async function compressAndUpload(uri: string) {
-    const accessToken = session?.access_token;
     if (!accessToken) {
       setError("Your session expired. Sign in again.");
       return;
@@ -134,7 +198,6 @@ export default function ScheduleProfileScreen() {
   }
 
   async function confirmDeletePhoto() {
-    const accessToken = session?.access_token;
     if (!accessToken) {
       setError("Your session expired. Sign in again.");
       return;
@@ -155,10 +218,22 @@ export default function ScheduleProfileScreen() {
 
   const isBusy = busyAction !== null;
   const canLoadPhoto =
-    hasPhoto && !workerConfigError && user?.id && session?.access_token;
+    hasPhoto && !workerConfigError && user?.id && accessToken;
+  const displayInitial =
+    (firstName.trim()[0] ?? user?.email?.[0] ?? "?").toUpperCase();
+
+  const fieldColors = {
+    color: colors.text,
+    backgroundColor: colors.fieldBg,
+    borderColor: colors.border,
+  };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={[styles.title, { color: colors.text }]}>Account</Text>
       <View
         style={[
@@ -168,7 +243,7 @@ export default function ScheduleProfileScreen() {
       >
         {canLoadPhoto ? (
           <Image
-            source={profilePhotoSource(user.id, session.access_token, photoVersion)}
+            source={profilePhotoSource(user.id, accessToken, photoVersion)}
             style={styles.avatarImage}
             contentFit="cover"
             transition={150}
@@ -177,7 +252,7 @@ export default function ScheduleProfileScreen() {
           />
         ) : (
           <Text style={[styles.fallbackText, { color: colors.primary }]}>
-            {(user?.email?.[0] ?? "?").toUpperCase()}
+            {displayInitial}
           </Text>
         )}
       </View>
@@ -185,11 +260,71 @@ export default function ScheduleProfileScreen() {
         {user?.email ?? "Signed in"}
       </Text>
 
+      <View style={styles.form}>
+        <Text style={[styles.label, { color: colors.textMuted }]}>First name</Text>
+        <TextInput
+          value={firstName}
+          onChangeText={setFirstName}
+          autoComplete="given-name"
+          textContentType="givenName"
+          editable={!isBusy && profileLoaded}
+          style={[styles.input, fieldColors]}
+        />
+
+        <Text style={[styles.label, { color: colors.textMuted }]}>Last name</Text>
+        <TextInput
+          value={lastName}
+          onChangeText={setLastName}
+          autoComplete="family-name"
+          textContentType="familyName"
+          editable={!isBusy && profileLoaded}
+          style={[styles.input, fieldColors]}
+        />
+
+        <Text style={[styles.label, { color: colors.textMuted }]}>Bio</Text>
+        <TextInput
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
+          placeholder="Tell classmates a bit about yourself"
+          placeholderTextColor={colors.textMuted}
+          editable={!isBusy && profileLoaded}
+          style={[styles.input, styles.bioInput, fieldColors]}
+        />
+      </View>
+
       {error ? (
         <Text style={[styles.error, { color: colors.error }]} accessibilityRole="alert">
           {error}
         </Text>
       ) : null}
+
+      <Pressable
+        style={({ pressed }) => [
+          styles.primaryButton,
+          { backgroundColor: colors.primary },
+          pressed && styles.buttonPressed,
+          isBusy && styles.buttonDisabled,
+        ]}
+        onPress={onSaveProfile}
+        disabled={isBusy || !profileLoaded}
+        accessibilityRole="button"
+      >
+        {busyAction === "save" ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.onPrimary} />
+            <Text style={[styles.primaryButtonText, { color: colors.onPrimary }]}>
+              Saving...
+            </Text>
+          </View>
+        ) : (
+          <Text style={[styles.primaryButtonText, { color: colors.onPrimary }]}>
+            Save profile
+          </Text>
+        )}
+      </Pressable>
 
       <Pressable
         style={({ pressed }) => [
@@ -263,15 +398,17 @@ export default function ScheduleProfileScreen() {
           {busyAction === "signout" ? "Signing out..." : "Sign out"}
         </Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  content: {
     padding: 24,
-    justifyContent: "center",
+    paddingBottom: 48,
     alignItems: "center",
   },
   title: {
@@ -302,6 +439,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
+  form: {
+    width: "100%",
+    maxWidth: 400,
+    marginTop: 20,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 6,
+    marginTop: 14,
+  },
+  input: {
+    height: 48,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 16,
+  },
+  bioInput: {
+    height: 96,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
   error: {
     marginTop: 16,
     fontSize: 14,
@@ -309,7 +469,9 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     minWidth: 220,
-    marginTop: 24,
+    width: "100%",
+    maxWidth: 400,
+    marginTop: 16,
     paddingVertical: 13,
     paddingHorizontal: 24,
     borderRadius: 10,
@@ -326,6 +488,8 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     minWidth: 220,
+    width: "100%",
+    maxWidth: 400,
     marginTop: 12,
     paddingVertical: 12,
     paddingHorizontal: 24,

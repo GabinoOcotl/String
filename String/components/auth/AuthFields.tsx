@@ -26,6 +26,10 @@ export type AuthFieldsProps = AuthFieldsBase &
     | { variant: "login" }
     | {
         variant: "signup";
+        firstName: string;
+        lastName: string;
+        onFirstNameChange: (text: string) => void;
+        onLastNameChange: (text: string) => void;
         confirmPassword: string;
         onConfirmPasswordChange: (text: string) => void;
       }
@@ -37,17 +41,47 @@ export const AuthFields = memo(function AuthFields(props: AuthFieldsProps) {
 
   const inputColors = useMemo(
     () => ({
-    color: colors.text,
-    backgroundColor: colors.fieldBg,
-    borderColor: colors.border,
-  }),
-  [colors.text, colors.fieldBg, colors.border]
+      color: colors.text,
+      backgroundColor: colors.fieldBg,
+      borderColor: colors.border,
+    }),
+    [colors.text, colors.fieldBg, colors.border],
   );
 
   const isSignup = props.variant === "signup";
 
   return (
     <View style={styles.form}>
+      {isSignup ? (
+        <>
+          <Text style={[styles.label, { color: colors.textMuted }]}>
+            First name
+          </Text>
+          <TextInput
+            value={props.firstName}
+            onChangeText={props.onFirstNameChange}
+            autoComplete="given-name"
+            textContentType="givenName"
+            placeholder="Ada"
+            placeholderTextColor={colors.textMuted}
+            style={[styles.input, inputColors]}
+          />
+
+          <Text style={[styles.label, { color: colors.textMuted }]}>
+            Last name
+          </Text>
+          <TextInput
+            value={props.lastName}
+            onChangeText={props.onLastNameChange}
+            autoComplete="family-name"
+            textContentType="familyName"
+            placeholder="Lovelace"
+            placeholderTextColor={colors.textMuted}
+            style={[styles.input, inputColors]}
+          />
+        </>
+      ) : null}
+
       <Text style={[styles.label, { color: colors.textMuted }]}>Email</Text>
       <TextInput
         value={props.email}

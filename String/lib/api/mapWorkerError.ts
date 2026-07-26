@@ -17,3 +17,5 @@ export function mapWorkerError(error: unknown): string {
 
   return "Something went wrong. Try again.";
 }
+
+
