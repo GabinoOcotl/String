@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import {
@@ -34,6 +34,7 @@ type ThreadMessage = {
   id: string;
   body: string;
   sender: string;
+  senderUserId: string;
   isOwn: boolean;
 };
 
@@ -42,6 +43,7 @@ function mapApiMessage(message: ApiChatMessage): ThreadMessage {
     id: message.id,
     body: message.text,
     sender: message.is_own ? "You" : message.sender_name,
+    senderUserId: message.user_id,
     isOwn: message.is_own,
   };
 }
@@ -49,6 +51,7 @@ function mapApiMessage(message: ApiChatMessage): ThreadMessage {
 export default function ChatThreadScreen() {
   const { threadId, name } = useLocalSearchParams<{ threadId: string; name?: string }>();
   const navigation = useNavigation();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = themeColors[colorScheme === "dark" ? "dark" : "light"];
@@ -150,6 +153,21 @@ export default function ChatThreadScreen() {
     };
   }, [navigation, title, colors.surface, colors.border]);
 
+  const openSenderProfile = useCallback(
+    (senderUserId: string) => {
+      if (!senderUserId) return;
+      if (userId && senderUserId === userId) {
+        router.push("/schedule/profile");
+        return;
+      }
+      router.push({
+        pathname: "/chats/profile/[userId]",
+        params: { userId: senderUserId },
+      });
+    },
+    [router, userId],
+  );
+
   const sendMessage = useCallback(async () => {
     const body = draft.trim();
     if (!body || !id || !accessToken || sending) return;
@@ -222,7 +240,16 @@ export default function ChatThreadScreen() {
             ]}
           >
             {!item.isOwn ? (
-              <Text style={[styles.sender, { color: colors.textMuted }]}>{item.sender}</Text>
+              <Pressable
+                onPress={() => openSenderProfile(item.senderUserId)}
+                accessibilityRole="link"
+                accessibilityLabel={`View ${item.sender}'s profile`}
+                hitSlop={6}
+              >
+                <Text style={[styles.sender, { color: colors.link }]}>
+                  {item.sender}
+                </Text>
+              </Pressable>
             ) : null}
             <Text style={[styles.body, { color: item.isOwn ? colors.onPrimary : colors.text }]}>
               {item.body}

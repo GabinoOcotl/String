@@ -25,6 +25,29 @@ export interface RoomThread {
   courseDesignation?: string;
 }
 
+export interface RoomMember {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string;
+  joined_at: string;
+  has_avatar: boolean;
+}
+
+export interface RoomSummary {
+  id: string;
+  name: string;
+  courseDesignation: string | null;
+  subjectCode: string | null;
+  courseId: string | null;
+  enrollmentClassNumber: number | null;
+}
+
+export interface RoomMembersResponse {
+  room: RoomSummary;
+  members: RoomMember[];
+}
+
 export async function joinSectionRoom(
   payload: JoinSectionRoomPayload,
   accessToken: string,
@@ -39,6 +62,16 @@ export async function joinSectionRoom(
 
 export async function getMyRooms(accessToken: string): Promise<RoomThread[]> {
   return workerFetch<RoomThread[]>("/rooms", { accessToken });
+}
+
+export async function getRoomMembers(
+  roomId: string,
+  accessToken: string,
+): Promise<RoomMembersResponse> {
+  return workerFetch<RoomMembersResponse>(
+    `/rooms/${encodeURIComponent(roomId)}/members`,
+    { accessToken },
+  );
 }
 
 export async function leaveSectionRoom(

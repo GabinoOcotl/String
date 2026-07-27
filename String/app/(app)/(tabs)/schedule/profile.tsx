@@ -25,8 +25,11 @@ import {
 } from "@/lib/api/profilePhotos";
 import { mapWorkerError } from "@/lib/api/mapWorkerError";
 import {
+  classDisplayName,
   getMyProfile,
+  getUserPublicProfile,
   updateMyProfile,
+  type ProfileClass,
   type UserProfile,
 } from "@/lib/api/users";
 import { workerConfigError } from "@/lib/api/workerClient";
@@ -49,26 +52,35 @@ export default function ScheduleProfileScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [description, setDescription] = useState("");
+  const [classes, setClasses] = useState<ProfileClass[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
 
   const accessToken = session?.access_token;
 
   const loadProfile = useCallback(async () => {
-    if (!accessToken) return;
+    if (!accessToken || !user?.id) return;
     setBusyAction("load");
     setError(null);
     try {
-      const profile: UserProfile = await getMyProfile(accessToken);
+      const [profile, publicProfile]: [
+        UserProfile,
+        Awaited<ReturnType<typeof getUserPublicProfile>>,
+      ] = await Promise.all([
+        getMyProfile(accessToken),
+        getUserPublicProfile(user.id, accessToken),
+      ]);
       setFirstName(profile.first_name ?? "");
       setLastName(profile.last_name ?? "");
       setDescription(profile.description ?? "");
+      setClasses(publicProfile.classes);
+      setHasPhoto(publicProfile.has_avatar);
       setProfileLoaded(true);
     } catch (loadError) {
       setError(mapWorkerError(loadError));
     } finally {
       setBusyAction(null);
     }
-  }, [accessToken]);
+  }, [accessToken, user?.id]);
 
   useEffect(() => {
     void loadProfile();
@@ -384,6 +396,36 @@ export default function ScheduleProfileScreen() {
         </Pressable>
       ) : null}
 
+      <View style={styles.classesSection}>
+        <Text style={[styles.classesTitle, { color: colors.text }]}>
+          Your classes
+        </Text>
+        {classes.length === 0 ? (
+          <Text style={[styles.classesEmpty, { color: colors.textMuted }]}>
+            Join a section from your schedule to appear in class chats.
+          </Text>
+        ) : (
+          classes.map((item) => (
+            <View
+              key={item.id}
+              style={[
+                styles.classRow,
+                { borderColor: colors.border, backgroundColor: colors.surface },
+              ]}
+            >
+              <Text style={[styles.className, { color: colors.text }]}>
+                {classDisplayName(item)}
+              </Text>
+              {item.enrollment_class_number != null ? (
+                <Text style={[styles.classMeta, { color: colors.textMuted }]}>
+                  Section {item.enrollment_class_number}
+                </Text>
+              ) : null}
+            </View>
+          ))
+        )}
+      </View>
+
       <Pressable
         style={({ pressed }) => [
           styles.secondaryButton,
@@ -512,5 +554,35 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  classesSection: {
+    width: "100%",
+    maxWidth: 400,
+    marginTop: 28,
+    marginBottom: 8,
+  },
+  classesTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  classesEmpty: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  classRow: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  className: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  classMeta: {
+    marginTop: 2,
+    fontSize: 13,
   },
 });

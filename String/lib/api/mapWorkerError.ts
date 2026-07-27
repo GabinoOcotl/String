@@ -5,6 +5,9 @@ export function mapWorkerError(error: unknown): string {
     if (error.status === 401) {
       return "Your session expired. Sign in again.";
     }
+    if (error.status === 403) {
+      return "You don't have access to this.";
+    }
     if (error.status === 502 || error.status === 503) {
       return "Course data is temporarily unavailable. Try again later.";
     }
